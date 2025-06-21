@@ -1,0 +1,75 @@
+import { GLSPDiagramConfiguration } from '@eclipse-glsp/theia-integration';
+import { Container } from 'inversify';
+import { {{toPascalCase projectName}}Model } from '../../common/{{projectName}}-model.js';
+
+export class {{toPascalCase projectName}}DiagramConfiguration extends GLSPDiagramConfiguration {
+    readonly diagramType = '{{projectName}}-diagram';
+
+    createContainer(widgetId: string): Container {
+        const container = super.createContainer(widgetId);
+        // Register default tools and handlers
+        {{#if config.diagram.features.grid}}
+        this.configureGrid(container);
+        {{/if}}
+        {{#if config.diagram.features.autoLayout}}
+        this.configureAutoLayout(container);
+        {{/if}}
+        return container;
+    }
+
+    protected initializeDiagramContainer(container: Container): void {
+        super.initializeDiagramContainer(container);
+        // Register model elements
+        // Note: We're binding the namespace itself, not trying to use it as a value
+        container.bind('{{toPascalCase projectName}}ModelNamespace').toConstantValue({{toPascalCase projectName}}Model);
+        
+        // Configure diagram options
+        this.configureDiagramOptions(container);
+    }
+    
+    private configureDiagramOptions(container: Container): void {
+        const options = {
+            {{#if config.diagram.features.snapToGrid}}
+            snapToGrid: true,
+            {{/if}}
+            {{#if config.diagram.features.animation}}
+            animationEnabled: true,
+            {{/if}}
+            routingType: '{{config.diagram.features.routing}}',
+            defaultNodeSize: {
+                width: {{config.styling.nodeDefaults.width}},
+                height: {{config.styling.nodeDefaults.height}}
+            },
+            theme: '{{config.styling.theme}}',
+            defaultColors: {
+                node: '{{config.styling.defaultColors.node}}',
+                edge: '{{config.styling.defaultColors.edge}}',
+                selected: '{{config.styling.defaultColors.selected}}',
+                hover: '{{config.styling.defaultColors.hover}}'
+            }
+        };
+        
+        container.bind('DiagramOptions').toConstantValue(options);
+    }
+    {{#if config.diagram.features.grid}}
+    
+    private configureGrid(container: Container): void {
+        // Configure grid options
+        container.bind('GridOptions').toConstantValue({
+            enabled: true,
+            size: 10,
+            visible: true
+        });
+    }
+    {{/if}}
+    {{#if config.diagram.features.autoLayout}}
+    
+    private configureAutoLayout(container: Container): void {
+        // Configure auto layout
+        container.bind('AutoLayoutOptions').toConstantValue({
+            enabled: true,
+            algorithm: 'layered'
+        });
+    }
+    {{/if}}
+}

@@ -1,0 +1,28 @@
+export namespace {{toPascalCase projectName}}Model {
+    export const TypeHierarchy = {
+{{#each interfaces}}
+        {{toCamelCase name}}: '{{toCamelCase name}}:{{name}}',
+{{/each}}
+    };
+
+    export interface {{toPascalCase projectName}}Element {
+        type: string;
+        id?: string;
+        [key: string]: any;
+    }
+
+{{#each interfaces}}
+    export interface {{name}} extends {{#if superTypes.length}}{{#each superTypes}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}{{toPascalCase ../projectName}}Element{{/if}} {
+{{#each properties}}
+        {{name}}{{#if optional}}?{{/if}}: {{type}}{{#if array}}[]{{/if}};
+{{/each}}
+    }
+
+{{/each}}
+{{#if (hasElements types)}}
+    // Type definitions
+{{#each types}}
+    export type {{name}} = {{definition}};
+{{/each}}
+{{/if}}
+}

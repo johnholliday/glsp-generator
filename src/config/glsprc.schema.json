@@ -1,0 +1,483 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GLSP Generator Configuration",
+  "description": "Configuration file for customizing GLSP extension generation",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to the JSON schema file"
+    },
+    "extension": {
+      "type": "object",
+      "description": "Extension metadata configuration",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name for the extension",
+          "pattern": "^[a-z0-9-]+$",
+          "default": "my-glsp-extension"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name for the extension",
+          "default": "My GLSP Extension"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version of the extension",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$",
+          "default": "1.0.0"
+        },
+        "publisher": {
+          "type": "string",
+          "description": "Publisher name or organization",
+          "default": "my-company"
+        },
+        "description": {
+          "type": "string",
+          "description": "Short description of the extension",
+          "default": "A GLSP-based visual modeling tool"
+        },
+        "license": {
+          "type": "string",
+          "description": "License identifier (e.g., MIT, Apache-2.0)",
+          "default": "MIT"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Repository URL"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author name and email"
+        },
+        "keywords": {
+          "type": "array",
+          "description": "Keywords for package discovery",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Dependency version configuration",
+      "properties": {
+        "@eclipse-glsp/server": {
+          "type": "string",
+          "description": "GLSP server version",
+          "default": "^2.0.0"
+        },
+        "@eclipse-glsp/client": {
+          "type": "string",
+          "description": "GLSP client version",
+          "default": "^2.0.0"
+        },
+        "@eclipse-glsp/theia-integration": {
+          "type": "string",
+          "description": "GLSP Theia integration version",
+          "default": "^2.0.0"
+        },
+        "@theia/core": {
+          "type": "string",
+          "description": "Theia core version",
+          "default": "^1.35.0"
+        },
+        "customDeps": {
+          "type": "object",
+          "description": "Additional custom dependencies",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[~^]?\\d+\\.\\d+\\.\\d+.*$"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagram": {
+      "type": "object",
+      "description": "Diagram configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Diagram type",
+          "enum": [
+            "node-edge",
+            "compartment",
+            "port",
+            "hierarchical"
+          ],
+          "default": "node-edge"
+        },
+        "features": {
+          "type": "object",
+          "description": "Diagram feature flags",
+          "properties": {
+            "compartments": {
+              "type": "boolean",
+              "description": "Enable compartment support",
+              "default": false
+            },
+            "ports": {
+              "type": "boolean",
+              "description": "Enable port support",
+              "default": false
+            },
+            "routing": {
+              "type": "string",
+              "description": "Edge routing algorithm",
+              "enum": [
+                "manhattan",
+                "polyline",
+                "bezier"
+              ],
+              "default": "polyline"
+            },
+            "grid": {
+              "type": "boolean",
+              "description": "Show grid in diagram",
+              "default": true
+            },
+            "snapToGrid": {
+              "type": "boolean",
+              "description": "Snap elements to grid",
+              "default": true
+            },
+            "autoLayout": {
+              "type": "boolean",
+              "description": "Enable automatic layout",
+              "default": false
+            },
+            "animation": {
+              "type": "boolean",
+              "description": "Enable animations",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "styling": {
+      "type": "object",
+      "description": "Visual styling configuration",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Default theme",
+          "enum": [
+            "light",
+            "dark",
+            "auto"
+          ],
+          "default": "light"
+        },
+        "defaultColors": {
+          "type": "object",
+          "description": "Default color scheme",
+          "properties": {
+            "node": {
+              "type": "string",
+              "description": "Default node color",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "default": "#4A90E2"
+            },
+            "edge": {
+              "type": "string",
+              "description": "Default edge color",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "default": "#333333"
+            },
+            "selected": {
+              "type": "string",
+              "description": "Selection highlight color",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "default": "#FF6B6B"
+            },
+            "hover": {
+              "type": "string",
+              "description": "Hover highlight color",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "default": "#FFA500"
+            },
+            "error": {
+              "type": "string",
+              "description": "Error state color",
+              "pattern": "^#[0-9A-Fa-f]{6}$",
+              "default": "#DC143C"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fonts": {
+          "type": "object",
+          "description": "Font configuration",
+          "properties": {
+            "default": {
+              "type": "string",
+              "description": "Default font family",
+              "default": "Arial, sans-serif"
+            },
+            "monospace": {
+              "type": "string",
+              "description": "Monospace font family",
+              "default": "Consolas, Monaco, monospace"
+            }
+          },
+          "additionalProperties": false
+        },
+        "nodeDefaults": {
+          "type": "object",
+          "description": "Default node styling",
+          "properties": {
+            "width": {
+              "type": "number",
+              "description": "Default node width",
+              "minimum": 10,
+              "default": 100
+            },
+            "height": {
+              "type": "number",
+              "description": "Default node height",
+              "minimum": 10,
+              "default": 60
+            },
+            "cornerRadius": {
+              "type": "number",
+              "description": "Node corner radius",
+              "minimum": 0,
+              "default": 5
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "description": "Code generation options",
+      "properties": {
+        "outputStructure": {
+          "type": "string",
+          "description": "Output directory structure",
+          "enum": [
+            "standard",
+            "flat",
+            "custom"
+          ],
+          "default": "standard"
+        },
+        "includeExamples": {
+          "type": "boolean",
+          "description": "Generate example models",
+          "default": true
+        },
+        "generateTests": {
+          "type": "boolean",
+          "description": "Generate test files",
+          "default": true
+        },
+        "generateDocs": {
+          "type": "boolean",
+          "description": "Generate documentation",
+          "default": true
+        },
+        "templateOverrides": {
+          "type": "object",
+          "description": "Custom template paths",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "linter": {
+      "type": "object",
+      "description": "Grammar linter configuration",
+      "properties": {
+        "rules": {
+          "type": "object",
+          "description": "Linter rule configurations",
+          "properties": {
+            "naming-conventions": {
+              "description": "Enforce naming conventions for interfaces and properties",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info",
+                    "hint",
+                    "off"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "error",
+                        "warning",
+                        "info",
+                        "hint",
+                        "off"
+                      ]
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              ],
+              "default": "error"
+            },
+            "no-duplicate-properties": {
+              "description": "Prevent duplicate property names in interfaces",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info",
+                    "hint",
+                    "off"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "error",
+                        "warning",
+                        "info",
+                        "hint",
+                        "off"
+                      ]
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              ],
+              "default": "error"
+            },
+            "no-circular-refs": {
+              "description": "Detect circular reference chains",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info",
+                    "hint",
+                    "off"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "error",
+                        "warning",
+                        "info",
+                        "hint",
+                        "off"
+                      ]
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              ],
+              "default": "warning"
+            },
+            "no-undefined-types": {
+              "description": "Ensure all referenced types are defined",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info",
+                    "hint",
+                    "off"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "error",
+                        "warning",
+                        "info",
+                        "hint",
+                        "off"
+                      ]
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              ],
+              "default": "error"
+            }
+          },
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "error",
+                  "warning",
+                  "info",
+                  "hint",
+                  "off"
+                ]
+              },
+              {
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "ignore": {
+          "type": "array",
+          "description": "Glob patterns for files to ignore",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

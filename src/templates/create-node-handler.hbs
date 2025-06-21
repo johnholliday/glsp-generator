@@ -1,0 +1,21 @@
+import { CreateNodeOperationHandler, CreateNodeOperation } from '@eclipse-glsp/server';
+import { injectable } from 'inversify';
+import { {{toPascalCase projectName}}Model } from '../../common/{{projectName}}-model.js';
+import { {{toPascalCase projectName}}ServerModel } from '../model/{{projectName}}-server-model.js';
+
+@injectable()
+export class Create{{toPascalCase projectName}}NodeHandler extends CreateNodeOperationHandler {
+    elementTypeIds = [
+{{#each interfaces}}
+        {{toPascalCase ../projectName}}Model.TypeHierarchy.{{toCamelCase name}},
+{{/each}}
+    ];
+
+    getLabel(): string {
+        return 'Create {{toPascalCase projectName}} Node';
+    }
+
+    protected createNode(operation: CreateNodeOperation): {{toPascalCase projectName}}Model.{{toPascalCase projectName}}Element | undefined {
+        return {{toPascalCase projectName}}ServerModel.createDefaultElement(operation.elementTypeId);
+    }
+}

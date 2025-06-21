@@ -1,0 +1,16 @@
+import { Command, CommandContribution, CommandRegistry } from '@theia/core';
+import { injectable } from 'inversify';
+import { {{toPascalCase projectName}}Model } from '../common/{{projectName}}-model.js';
+
+@injectable()
+export class {{toPascalCase projectName}}CommandContribution implements CommandContribution {
+
+    registerCommands(registry: CommandRegistry): void {
+{{#each interfaces}}
+        registry.registerCommand({
+            id: 'create.{{toCamelCase name}}',
+            label: 'Create {{name}}'
+        });
+{{/each}}
+    }
+}

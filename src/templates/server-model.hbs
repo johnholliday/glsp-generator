@@ -1,0 +1,39 @@
+import { {{toPascalCase projectName}}Model } from '../../common/{{projectName}}-model.js';
+
+export class {{toPascalCase projectName}}ServerModel {
+    static initialize(): {{toPascalCase projectName}}Model.{{toPascalCase projectName}}Element {
+        return {
+            type: 'graph',
+            id: 'root',
+            children: [],
+            bounds: { x: 0, y: 0, width: 0, height: 0 }
+        };
+    }
+
+    static createDefaultElement(elementTypeId: string): {{toPascalCase projectName}}Model.{{toPascalCase projectName}}Element {
+        const baseElement: {{toPascalCase projectName}}Model.{{toPascalCase projectName}}Element = {
+            type: elementTypeId,
+            id: `${elementTypeId}_${Date.now()}`,
+            position: { x: 0, y: 0 },
+            size: { width: 100, height: 50 }
+        };
+
+        switch (elementTypeId) {
+{{#each interfaces}}
+            case {{toPascalCase ../projectName}}Model.TypeHierarchy.{{toCamelCase name}}:
+                return {
+                    ...baseElement,
+{{#each properties}}
+{{#unless array}}
+                    {{name}}: {{#if optional}}undefined{{else}}{{#if (eq type "string")}}'default'{{else if (eq type "number")}}0{{else if (eq type "boolean")}}false{{else}}undefined{{/if}}{{/if}},
+{{else}}
+                    {{name}}: [],
+{{/unless}}
+{{/each}}
+                } as {{toPascalCase ../projectName}}Model.{{name}};
+{{/each}}
+            default:
+                return baseElement;
+        }
+    }
+}

@@ -1,0 +1,128 @@
+name: Validate Templates
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+jobs:
+  validate-templates:
+    name: Validate Yarn 1.22 Compatibility
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      
+      - name: Install Yarn Berry for GLSP Generator
+        run: |
+          corepack enable
+          yarn set version 4.9.1
+      
+      - name: Install dependencies
+        run: yarn install
+      
+      - name: Build project
+        run: yarn build
+      
+      - name: Run template validation
+        run: yarn validate:templates
+      
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-report-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: validation-report.json
+
+  test-generated-extension:
+    name: Test Generated Extension
+    runs-on: ${{ matrix.os }}
+    needs: validate-templates
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+      
+      - name: Install Yarn Berry for GLSP Generator
+        run: |
+          corepack enable
+          yarn set version 4.9.1
+      
+      - name: Install dependencies
+        run: yarn install
+      
+      - name: Build GLSP Generator
+        run: yarn build
+      
+      - name: Generate test extension
+        run: |
+          node dist/cli.js generate src/__tests__/fixtures/test-grammar.langium -o test-output
+      
+      - name: Install Yarn Classic 1.22.x
+        run: |
+          npm uninstall -g yarn
+          npm install -g yarn@1.22.22
+          yarn --version
+      
+      - name: Validate generated extension with Yarn 1.22
+        run: |
+          node scripts/validate-generated.js test-output
+      
+      - name: Upload generated extension
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: failed-extension-${{ matrix.os }}
+          path: test-output/
+
+  run-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+      
+      - name: Install Yarn Berry
+        run: |
+          corepack enable
+          yarn set version 4.9.1
+      
+      - name: Install dependencies
+        run: yarn install
+      
+      - name: Run tests with coverage
+        run: yarn test --coverage
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/

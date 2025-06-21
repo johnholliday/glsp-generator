@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(yarn test)",
+      "Bash(node:*)",
+      "Bash(mv:*)",
+      "Bash(yarn test:*)",
+      "Bash(/mnt/c/nvm4w/nodejs/yarn test src/__tests__/cli.test.ts)",
+      "Bash(yarn --version)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(npm test:*)",
+      "Bash(yarn install)",
+      "Bash(/mnt/c/nvm4w/nodejs/yarn test src/watch/watcher.test.ts)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(yarn add:*)",
+      "Bash(npm install:*)",
+      "Bash(cp:*)",
+      "Bash(yarn build)",
+      "Bash(npx copyfiles:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(npx jest:*)",
+      "Bash(test:*)",
+      "Bash(yarn jest:*)",
+      "Bash(NODE_ENV=test npx jest --maxWorkers=1 --no-coverage 2 >& 1)",
+      "Bash(NODE_ENV=test npx jest --maxWorkers=1 --no-coverage)",
+      "Bash(/mnt/c/nvm4w/nodejs/yarn test)"
+    ],
+    "deny": []
+  }
+}
