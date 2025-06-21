@@ -1,0 +1,54 @@
+// Validation Examples
+// This file demonstrates both valid and invalid model configurations
+
+// ============================================
+// VALID EXAMPLES
+// ============================================
+
+// Valid: All required properties present
+Workflow validComplete {
+    name: "value1"
+    version: "value1"
+    description: "value1"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+// Valid: With optional properties
+Workflow validWithOptional {
+    name: "value1"
+    version: "value1"
+    description: "value1"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+// ============================================
+// INVALID EXAMPLES (will cause validation errors)
+// ============================================
+
+/*
+// Invalid: Missing required property
+Workflow invalidMissing {
+    name: "value1"
+    // Missing: version
+}
+
+// Invalid: Wrong type
+
+// Invalid: Unknown property
+Workflow invalidUnknown {
+    name: "value1"
+    version: "value1"
+    description: "value1"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+    unknownProperty: "This property does not exist"
+}
+*/

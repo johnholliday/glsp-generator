@@ -92,6 +92,16 @@ cli.command(
         type: 'boolean',
         default: false
       })
+      .option('docs', {
+        describe: 'Generate documentation along with extension',
+        type: 'boolean',
+        default: false
+      })
+      .option('docs-theme', {
+        describe: 'Theme for documentation diagrams',
+        choices: ['light', 'dark'],
+        default: 'light'
+      })
       .example('$0 gen state-machine.langium', 'Generate with default output')
       .example('$0 gen grammar.langium ./my-extension', 'Custom output directory')
       .example('$0 gen grammar.langium -w', 'Generate and watch for changes')
@@ -184,7 +194,12 @@ cli.command(
 
       // Generate extension
       const generateSpinner = ora('Generating GLSP extension...').start();
-      await generator.generateExtension(grammarPath, outputPath);
+      await generator.generateExtension(grammarPath, outputPath, {
+        generateDocs: argv.docs,
+        docsOptions: {
+          theme: argv['docs-theme'] as 'light' | 'dark'
+        }
+      });
       generateSpinner.succeed('Generation complete');
 
       console.log(chalk.green.bold('\n🎉 Generation completed successfully!'));
@@ -212,7 +227,12 @@ cli.command(
         watcher.on('change', async () => {
           console.log(chalk.yellow(`\n📝 File changed: ${grammarPath}`));
           try {
-            await generator.generateExtension(grammarPath, outputPath);
+            await generator.generateExtension(grammarPath, outputPath, {
+              generateDocs: argv.docs,
+              docsOptions: {
+                theme: argv['docs-theme'] as 'light' | 'dark'
+              }
+            });
             console.log(chalk.green('✅ Regenerated successfully'));
           } catch (error) {
             console.error(chalk.red(`❌ Regeneration failed: ${error}`));
@@ -402,6 +422,100 @@ cli.command(
       
     } catch (error) {
       console.error(chalk.red('❌ Watch mode failed:'), error);
+      process.exit(1);
+    }
+  }
+);
+
+// Documentation command
+cli.command(
+  ['docs <grammar> [output]', 'doc', 'd'],
+  'Generate documentation from Langium grammar',
+  (yargs) => {
+    return yargs
+      .positional('grammar', {
+        describe: 'Langium grammar file',
+        type: 'string',
+        normalize: true
+      })
+      .positional('output', {
+        describe: 'Output directory',
+        type: 'string',
+        default: '.',
+        normalize: true
+      })
+      .option('readme', {
+        describe: 'Generate README.md',
+        type: 'boolean',
+        default: true
+      })
+      .option('api', {
+        describe: 'Generate API documentation',
+        type: 'boolean',
+        default: true
+      })
+      .option('diagrams', {
+        describe: 'Generate railroad diagrams',
+        type: 'boolean',
+        default: true
+      })
+      .option('examples', {
+        describe: 'Generate example model files',
+        type: 'boolean',
+        default: true
+      })
+      .option('theme', {
+        describe: 'Theme for diagrams',
+        choices: ['light', 'dark'],
+        default: 'light'
+      })
+      .option('no-screenshots', {
+        describe: 'Skip screenshot placeholders',
+        type: 'boolean',
+        default: false
+      })
+      .option('config', {
+        alias: 'c',
+        describe: 'Configuration file',
+        type: 'string'
+      })
+      .example('$0 docs grammar.langium', 'Generate all documentation')
+      .example('$0 docs grammar.langium ./docs', 'Custom output directory')
+      .example('$0 docs grammar.langium --no-diagrams', 'Skip railroad diagrams')
+      .example('$0 docs grammar.langium --theme dark', 'Use dark theme');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue.bold('📚 Generating Documentation'));
+      
+      const grammarFile = argv.grammar;
+      if (!grammarFile || !await fs.pathExists(grammarFile)) {
+        console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
+        process.exit(1);
+      }
+
+      // Load configuration if specified
+      let config = undefined;
+      if (argv.config) {
+        const configLoader = new ConfigLoader();
+        config = await configLoader.loadConfig(process.cwd(), argv.config);
+      }
+
+      const generator = new GLSPGenerator(config);
+      
+      const docsOptions = {
+        readme: argv.readme,
+        api: argv.api,
+        diagrams: argv.diagrams,
+        examples: argv.examples,
+        theme: argv.theme as 'light' | 'dark',
+        screenshots: !argv['no-screenshots']
+      };
+
+      await generator.generateDocumentation(grammarFile, argv.output!, docsOptions);
+      
+    } catch (error) {
+      console.error(chalk.red(`❌ Documentation generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
     }
   }

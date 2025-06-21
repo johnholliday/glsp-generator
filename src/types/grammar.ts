@@ -40,3 +40,8 @@ export interface TemplateData {
   config: GLSPConfig;
   [key: string]: any;
 }
+
+// Type aliases for backward compatibility
+export type ParsedInterface = GrammarInterface;
+export type ParsedType = GrammarType;
+export type ParsedProperty = GrammarProperty;

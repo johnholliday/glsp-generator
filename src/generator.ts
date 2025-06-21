@@ -11,6 +11,8 @@ import { GrammarLinter } from './validation/linter.js';
 import { ValidationReporter } from './validation/reporter.js';
 import { ValidationResult } from './validation/types.js';
 import { getTemplatesDir } from './utils/paths.js';
+import { DocumentationGenerator } from './documentation/documentation-generator.js';
+import { DocumentationOptions } from './documentation/types.js';
 
 export class GLSPGenerator {
   private parser: IGrammarParser;
@@ -18,16 +20,22 @@ export class GLSPGenerator {
   private config: GLSPConfig;
   private linter: GrammarLinter;
   private reporter: ValidationReporter;
+  private documentationGenerator: DocumentationGenerator;
 
   constructor(config?: GLSPConfig, parser?: IGrammarParser) {
     this.parser = parser || new LangiumGrammarParser();
     this.config = config || DEFAULT_CONFIG;
     this.linter = new GrammarLinter(this.config.linter);
     this.reporter = new ValidationReporter();
+    this.documentationGenerator = new DocumentationGenerator();
     this.registerHandlebarsHelpers();
   }
 
-  async generateExtension(grammarFile: string, outputDir: string = '.'): Promise<void> {
+  async generateExtension(
+    grammarFile: string,
+    outputDir: string = '.',
+    options?: { generateDocs?: boolean; docsOptions?: DocumentationOptions }
+  ): Promise<void> {
     console.log(chalk.blue('🔄 Parsing grammar file...'));
     const grammar = await this.parser.parseGrammarFile(grammarFile);
 
@@ -56,6 +64,11 @@ export class GLSPGenerator {
     console.log(chalk.green('✅ Extension generated successfully!'));
     console.log(chalk.yellow(`📍 Location: ${extensionDir}`));
     console.log(chalk.cyan(`📊 Generated ${grammar.interfaces.length} interfaces and ${grammar.types.length} types`));
+
+    // Generate documentation if requested
+    if (options?.generateDocs) {
+      await this.generateDocumentation(grammarFile, extensionDir, options.docsOptions);
+    }
   }
 
   private async createProjectStructure(extensionDir: string): Promise<void> {
@@ -273,5 +286,32 @@ export class GLSPGenerator {
     const grammarContent = await fs.readFile(grammarFile, 'utf-8');
     const ast = await this.parser.parseGrammar(grammarContent);
     return await this.linter.lintGrammar(grammarFile, grammarContent, ast);
+  }
+
+  async generateDocumentation(
+    grammarFile: string,
+    outputDir: string = '.',
+    options?: DocumentationOptions
+  ): Promise<void> {
+    console.log(chalk.blue('📚 Generating documentation...'));
+    
+    // Parse grammar
+    const grammar = await this.parser.parseGrammarFile(grammarFile);
+    
+    // Generate documentation
+    const result = await this.documentationGenerator.generate(
+      grammar,
+      this.config,
+      outputDir,
+      options
+    );
+    
+    if (result.success) {
+      console.log(chalk.green('✅ Documentation generated successfully!'));
+      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+    } else {
+      console.error(chalk.red('❌ Some documentation generation failed:'));
+      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+    }
   }
 }

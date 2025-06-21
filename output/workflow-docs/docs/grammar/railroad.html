@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>workflow Grammar Railroad Diagrams</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #333333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #1a1a1a;
+        }
+        .navigation {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #f8f8f8;
+            border-right: 1px solid #e1e1e1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .content {
+            margin-left: 290px;
+            padding: 20px;
+        }
+        .nav-section {
+            margin-bottom: 30px;
+        }
+        .nav-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666666;
+            margin-bottom: 10px;
+        }
+        .nav-item {
+            display: block;
+            padding: 5px 10px;
+            color: #0066cc;
+            text-decoration: none;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+        .nav-item:hover {
+            background: #f0f0f0;
+        }
+        .nav-item.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .diagram-container {
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        .diagram-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e1e1e1;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            background: #ffffff;
+            color: #333333;
+        }
+        .description {
+            color: #666666;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        @media (max-width: 768px) {
+            .navigation {
+                display: none;
+            }
+            .content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <h2>workflow</h2>
+        <input type="text" class="search-box" placeholder="Search..." onkeyup="filterDiagrams(this.value)">
+        
+        <div class="nav-section">
+            <h3>Interfaces</h3>
+            <a href="#Workflow" class="nav-item" onclick="scrollToDiagram('Workflow')">Workflow</a>
+            <a href="#Task" class="nav-item" onclick="scrollToDiagram('Task')">Task</a>
+            <a href="#Flow" class="nav-item" onclick="scrollToDiagram('Flow')">Flow</a>
+            <a href="#Parameter" class="nav-item" onclick="scrollToDiagram('Parameter')">Parameter</a>
+        </div>
+        
+        <div class="nav-section">
+            <h3>Types</h3>
+            
+        </div>
+    </div>
+    
+    <div class="content">
+        <h1>workflow Grammar Railroad Diagrams</h1>
+        <p class="description">
+            Visual representation of the grammar structure. Click on any item in the navigation to jump to its diagram.
+        </p>
+        
+        <h2>Interfaces</h2>
+        
+        <div class="diagram-container" id="Workflow" data-name="workflow">
+            <div class="diagram-title">Workflow</div>
+            <p class="description">Interface defining the structure of Workflow elements.</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="800" height="360" viewBox="0 0 800 360">
+  <defs>
+    <style>
+      .interface-box { fill: #f5f5f5; stroke: #cccccc; stroke-width: 2; }
+      .interface-name { fill: #333333; font-family: monospace; font-size: 18px; font-weight: bold; }
+      .property { fill: #333333; font-family: monospace; font-size: 14px; }
+      .property-type { fill: #0066cc; }
+      .optional { fill: #666666; }
+      .extends { fill: #9933cc; font-style: italic; }
+      .arrow { fill: none; stroke: #0066cc; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0066cc" />
+    </marker>
+  </defs>
+  
+  <!-- Interface Box -->
+  <rect class="interface-box" x="20" y="20" width="760" height="320" rx="5" />
+  
+  <!-- Interface Name -->
+  <text class="interface-name" x="400" y="50" text-anchor="middle">
+    interface Workflow
+  </text>
+  
+  
+  
+  <!-- Properties -->
+  <line x1="20" y1="80" x2="780" y2="80" stroke="#cccccc" stroke-width="1" />
+  
+  
+  <g transform="translate(40, 100)">
+    <text class="property">
+      name:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 130)">
+    <text class="property">
+      version:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 160)">
+    <text class="property">
+      description:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 190)">
+    <text class="property">
+      tasks:
+      <tspan class="property-type"> Task[]</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 220)">
+    <text class="property">
+      flows:
+      <tspan class="property-type"> Flow[]</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 250)">
+    <text class="property">
+      startTask:
+      <tspan class="property-type"> Task</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 280)">
+    <text class="property">
+      endTasks:
+      <tspan class="property-type"> Task[]</tspan>
+      
+    </text>
+  </g>
+  
+</svg>
+        </div>
+        
+        
+        <div class="diagram-container" id="Task" data-name="task">
+            <div class="diagram-title">Task</div>
+            <p class="description">Interface defining the structure of Task elements.</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="800" height="390" viewBox="0 0 800 390">
+  <defs>
+    <style>
+      .interface-box { fill: #f5f5f5; stroke: #cccccc; stroke-width: 2; }
+      .interface-name { fill: #333333; font-family: monospace; font-size: 18px; font-weight: bold; }
+      .property { fill: #333333; font-family: monospace; font-size: 14px; }
+      .property-type { fill: #0066cc; }
+      .optional { fill: #666666; }
+      .extends { fill: #9933cc; font-style: italic; }
+      .arrow { fill: none; stroke: #0066cc; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0066cc" />
+    </marker>
+  </defs>
+  
+  <!-- Interface Box -->
+  <rect class="interface-box" x="20" y="20" width="760" height="350" rx="5" />
+  
+  <!-- Interface Name -->
+  <text class="interface-name" x="400" y="50" text-anchor="middle">
+    interface Task
+  </text>
+  
+  
+  
+  <!-- Properties -->
+  <line x1="20" y1="80" x2="780" y2="80" stroke="#cccccc" stroke-width="1" />
+  
+  
+  <g transform="translate(40, 100)">
+    <text class="property">
+      id:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 130)">
+    <text class="property">
+      name:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 160)">
+    <text class="property">
+      type:
+      <tspan class="property-type"> TaskType</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 190)">
+    <text class="property">
+      assignee:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 220)">
+    <text class="property">
+      description:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 250)">
+    <text class="property">
+      inputs:
+      <tspan class="property-type"> Parameter[]</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 280)">
+    <text class="property">
+      outputs:
+      <tspan class="property-type"> Parameter[]</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 310)">
+    <text class="property">
+      timeout:
+      <tspan class="property-type"> number</tspan>
+      
+    </text>
+  </g>
+  
+</svg>
+        </div>
+        
+        
+        <div class="diagram-container" id="Flow" data-name="flow">
+            <div class="diagram-title">Flow</div>
+            <p class="description">Interface defining the structure of Flow elements.</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="800" height="270" viewBox="0 0 800 270">
+  <defs>
+    <style>
+      .interface-box { fill: #f5f5f5; stroke: #cccccc; stroke-width: 2; }
+      .interface-name { fill: #333333; font-family: monospace; font-size: 18px; font-weight: bold; }
+      .property { fill: #333333; font-family: monospace; font-size: 14px; }
+      .property-type { fill: #0066cc; }
+      .optional { fill: #666666; }
+      .extends { fill: #9933cc; font-style: italic; }
+      .arrow { fill: none; stroke: #0066cc; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0066cc" />
+    </marker>
+  </defs>
+  
+  <!-- Interface Box -->
+  <rect class="interface-box" x="20" y="20" width="760" height="230" rx="5" />
+  
+  <!-- Interface Name -->
+  <text class="interface-name" x="400" y="50" text-anchor="middle">
+    interface Flow
+  </text>
+  
+  
+  
+  <!-- Properties -->
+  <line x1="20" y1="80" x2="780" y2="80" stroke="#cccccc" stroke-width="1" />
+  
+  
+  <g transform="translate(40, 100)">
+    <text class="property">
+      from:
+      <tspan class="property-type"> Task</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 130)">
+    <text class="property">
+      to:
+      <tspan class="property-type"> Task</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 160)">
+    <text class="property">
+      condition:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 190)">
+    <text class="property">
+      priority:
+      <tspan class="property-type"> number</tspan>
+      
+    </text>
+  </g>
+  
+</svg>
+        </div>
+        
+        
+        <div class="diagram-container" id="Parameter" data-name="parameter">
+            <div class="diagram-title">Parameter</div>
+            <p class="description">Interface defining the structure of Parameter elements.</p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="800" height="270" viewBox="0 0 800 270">
+  <defs>
+    <style>
+      .interface-box { fill: #f5f5f5; stroke: #cccccc; stroke-width: 2; }
+      .interface-name { fill: #333333; font-family: monospace; font-size: 18px; font-weight: bold; }
+      .property { fill: #333333; font-family: monospace; font-size: 14px; }
+      .property-type { fill: #0066cc; }
+      .optional { fill: #666666; }
+      .extends { fill: #9933cc; font-style: italic; }
+      .arrow { fill: none; stroke: #0066cc; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0066cc" />
+    </marker>
+  </defs>
+  
+  <!-- Interface Box -->
+  <rect class="interface-box" x="20" y="20" width="760" height="230" rx="5" />
+  
+  <!-- Interface Name -->
+  <text class="interface-name" x="400" y="50" text-anchor="middle">
+    interface Parameter
+  </text>
+  
+  
+  
+  <!-- Properties -->
+  <line x1="20" y1="80" x2="780" y2="80" stroke="#cccccc" stroke-width="1" />
+  
+  
+  <g transform="translate(40, 100)">
+    <text class="property">
+      name:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 130)">
+    <text class="property">
+      type:
+      <tspan class="property-type"> DataType</tspan>
+      
+    </text>
+  </g>
+  
+  <g transform="translate(40, 160)">
+    <text class="property">
+      required?:
+      <tspan class="property-type"> string</tspan>
+      <tspan class="optional"> (optional)</tspan>
+    </text>
+  </g>
+  
+  <g transform="translate(40, 190)">
+    <text class="property">
+      defaultValue:
+      <tspan class="property-type"> string</tspan>
+      
+    </text>
+  </g>
+  
+</svg>
+        </div>
+        
+        
+        <h2>Types</h2>
+        
+    </div>
+    
+    <script>
+        function scrollToDiagram(name) {
+            const element = document.getElementById(name);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Update active navigation
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            }
+        }
+        
+        function filterDiagrams(query) {
+            const lowerQuery = query.toLowerCase();
+            document.querySelectorAll('.diagram-container').forEach(container => {
+                const name = container.getAttribute('data-name');
+                container.style.display = name.includes(lowerQuery) ? 'block' : 'none';
+            });
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const name = item.textContent.toLowerCase();
+                item.style.display = name.includes(lowerQuery) ? 'block' : 'none';
+            });
+        }
+        
+        // Highlight current section on scroll
+        window.addEventListener('scroll', () => {
+            const containers = document.querySelectorAll('.diagram-container');
+            let current = '';
+            
+            containers.forEach(container => {
+                const rect = container.getBoundingClientRect();
+                if (rect.top <= 100 && rect.bottom >= 100) {
+                    current = container.id;
+                }
+            });
+            
+            if (current) {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.getAttribute('href') === '#' + current);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

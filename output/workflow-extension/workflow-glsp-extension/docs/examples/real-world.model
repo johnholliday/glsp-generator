@@ -1,0 +1,62 @@
+// Real-World Example: Order Processing Workflow
+// This model represents a complete e-commerce order processing system
+
+Workflow start {
+    name: "Order Received"
+    version: "version_start"
+    description: "Description for start"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+Workflow validate {
+    name: "Validate Order"
+    version: "version_validate"
+    description: "Description for validate"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+Workflow payment {
+    name: "Process Payment"
+    version: "version_payment"
+    description: "Description for payment"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+Workflow inventory {
+    name: "Check Inventory"
+    version: "version_inventory"
+    description: "Description for inventory"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+Workflow ship {
+    name: "Ship Order"
+    version: "version_ship"
+    description: "Description for ship"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
+
+Workflow complete {
+    name: "Order Complete"
+    version: "version_complete"
+    description: "Description for complete"
+    tasks: [@task1]
+    flows: [@flow1]
+    startTask: @task1
+    endTasks: [@task1]
+}
