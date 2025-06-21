@@ -41,6 +41,30 @@ export interface TemplateData {
   [key: string]: any;
 }
 
+// Additional interfaces for performance optimizations
+export interface GrammarAST {
+  projectName: string;
+  grammarName: string;
+  rules: ParsedRule[];
+  interfaces: GrammarInterface[];
+  types: GrammarType[];
+  imports: string[];
+  metadata?: {
+    ruleCount: number;
+    interfaceCount: number;
+    parseTime: number;
+    [key: string]: any;
+  };
+}
+
+export interface ParsedRule {
+  name: string;
+  definition: string;
+  type: string;
+  properties: string[];
+  references: string[];
+}
+
 // Type aliases for backward compatibility
 export type ParsedInterface = GrammarInterface;
 export type ParsedType = GrammarType;

@@ -6,7 +6,7 @@ export default {
   testMatch: ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
   testPathIgnorePatterns: [
     "<rootDir>/src/__tests__/setup.ts",
-    "\\.mock\\.(ts|js)$"
+    "\\.mock\\.(ts|js)$",
   ],
   // Prevent memory leaks and worker issues
   maxWorkers: 1,
@@ -40,15 +40,22 @@ export default {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     // Mock chalk to avoid ESM issues
     "^chalk$": "<rootDir>/src/__mocks__/chalk.js",
+    // Mock performance modules to avoid ES module issues in DI tests
+    "^.+/performance/index(\\.js)?$":
+      "<rootDir>/src/__mocks__/performance/index.js",
+    "^.+/performance/progress-indicator(\\.js)?$":
+      "<rootDir>/src/__mocks__/performance/progress-indicator.js",
     // Mock Langium modules to avoid Chevrotain ESM issues
     "^langium$": "<rootDir>/src/__mocks__/langium.js",
     "^langium/grammar$": "<rootDir>/src/__mocks__/langium/grammar.js",
     // Mock Langium parser utilities - use more specific patterns
-    "^.+/utils/langium-grammar-parser$": "<rootDir>/src/__mocks__/utils/langium-grammar-parser.js",
-    "^.+/utils/langium-parser$": "<rootDir>/src/__mocks__/utils/langium-parser.js",
+    "^.+/utils/langium-grammar-parser$":
+      "<rootDir>/src/__mocks__/utils/langium-grammar-parser.js",
+    "^.+/utils/langium-parser$":
+      "<rootDir>/src/__mocks__/utils/langium-parser.js",
   },
   transformIgnorePatterns: [
     // Don't transform our mocks
-    "node_modules/(?!chalk)"
+    "node_modules/(?!chalk)",
   ],
 };

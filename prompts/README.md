@@ -22,7 +22,7 @@ This directory contains structured enhancement requests for the GLSP Generator p
 | 006 | [prompt-006-doc-generator.md](prompt-006-doc-generator.md) | Documentation generation from grammar | 🟢 Completed | None | MEDIUM |
 | 007 | [prompt-007-test-infrastructure.md](prompt-007-test-infrastructure.md) | Test generation for extensions | 🟢 Completed | 002 | LOW |
 | 008 | [prompt-008-cicd-templates.md](prompt-008-cicd-templates.md) | CI/CD workflow generation | 🟢 Completed | None | LOW |
-| 009 | [prompt-009-custom-templates.md](prompt-009-custom-templates.md) | Custom template system | 🔴 Not Started | None | LOW |
+| 009 | [prompt-009-custom-templates.md](prompt-009-custom-templates.md) | Custom template system | 🟢 Completed | None | LOW |
 | 010 | [prompt-010-performance.md](prompt-010-performance.md) | Performance optimizations | 🔴 Not Started | None | LOW |
 | 011 | [prompt-011-migration-tools.md](prompt-011-migration-tools.md) | Grammar migration tools | 🔴 Not Started | None | LOW |
 | 012 | [prompt-012-type-safety.md](prompt-012-type-safety.md) | Enhanced type safety features | 🟢 Completed | None | MEDIUM |

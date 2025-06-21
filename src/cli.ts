@@ -167,6 +167,23 @@ cli.command(
         type: 'boolean',
         default: false
       })
+      .option('templates', {
+        alias: 't',
+        describe: 'Custom templates path, package, or Git repository',
+        type: 'string'
+      })
+      .option('templates-path', {
+        describe: 'Path to custom templates directory',
+        type: 'string'
+      })
+      .option('templates-package', {
+        describe: 'npm package name for custom templates',
+        type: 'string'
+      })
+      .option('templates-repo', {
+        describe: 'Git repository URL for custom templates',
+        type: 'string'
+      })
       .option('ci-platforms', {
         describe: 'CI platforms to target',
         type: 'array',
@@ -330,14 +347,12 @@ cli.command(
             ...(argv['ci-publish-npm'] ? ['npm' as const] : []),
             ...(argv['ci-publish-ovsx'] ? ['ovsx' as const] : [])
           ],
-          containerSupport: argv['ci-docker'],
-          workflows: {
-            generateBuildWorkflow: true,
-            generateReleaseWorkflow: true,
-            generateSecurityWorkflow: true,
-            generateDependencyUpdateWorkflow: true,
-            generateNightlyWorkflow: true
-          }
+          containerSupport: argv['ci-docker']
+        },
+        templateOptions: {
+          templatesPath: argv['templates-path'],
+          templatesPackage: argv['templates-package'],
+          templatesRepo: argv['templates-repo']
         }
       });
       generateSpinner.succeed('Generation complete');
@@ -1531,6 +1546,346 @@ cli.command(
   }
 );
 
+// Template management commands
+cli.command(
+  'templates <command>',
+  'Manage template packages',
+  (yargs) => {
+    return yargs
+      .command(
+        'list',
+        'List installed template packages',
+        {},
+        async () => {
+          try {
+            const { TemplateSystem } = await import('./templates/index.js');
+            const templateSystem = new TemplateSystem();
+            const packages = await templateSystem.listPackages();
+            
+            if (packages.length === 0) {
+              console.log(chalk.yellow('No template packages installed'));
+              return;
+            }
+            
+            console.log(chalk.blue('📦 Installed template packages:'));
+            packages.forEach(pkg => {
+              console.log(chalk.green(`  ✓ ${pkg.name}@${pkg.version}`));
+              if (pkg.description) {
+                console.log(chalk.gray(`    ${pkg.description}`));
+              }
+            });
+          } catch (error) {
+            console.error(chalk.red(`❌ Failed to list packages: ${error}`));
+          }
+        }
+      )
+      .command(
+        'search <query>',
+        'Search for template packages',
+        (yargs) => {
+          return yargs
+            .positional('query', {
+              describe: 'Search query',
+              type: 'string'
+            });
+        },
+        async (argv) => {
+          try {
+            if (!argv.query) {
+              console.error(chalk.red('❌ Search query is required'));
+              process.exit(1);
+            }
+            
+            const { TemplateSystem } = await import('./templates/index.js');
+            const templateSystem = new TemplateSystem();
+            const packages = await templateSystem.searchPackages(argv.query);
+            
+            if (packages.length === 0) {
+              console.log(chalk.yellow(`No packages found for "${argv.query}"`));
+              return;
+            }
+            
+            console.log(chalk.blue(`🔍 Found ${packages.length} package(s):`));
+            packages.forEach(pkg => {
+              const status = pkg.installed ? chalk.green('✓ installed') : chalk.gray('not installed');
+              console.log(chalk.white(`  ${pkg.name}@${pkg.version} (${status})`));
+              if (pkg.description) {
+                console.log(chalk.gray(`    ${pkg.description}`));
+              }
+            });
+          } catch (error) {
+            console.error(chalk.red(`❌ Search failed: ${error}`));
+          }
+        }
+      )
+      .command(
+        'install <package>',
+        'Install a template package',
+        (yargs) => {
+          return yargs
+            .positional('package', {
+              describe: 'Package name',
+              type: 'string'
+            })
+            .option('version', {
+              describe: 'Package version',
+              type: 'string'
+            })
+            .option('global', {
+              alias: 'g',
+              describe: 'Install globally',
+              type: 'boolean',
+              default: false
+            });
+        },
+        async (argv) => {
+          try {
+            if (!argv.package) {
+              console.error(chalk.red('❌ Package name is required'));
+              process.exit(1);
+            }
+            
+            const { TemplateSystem } = await import('./templates/index.js');
+            const templateSystem = new TemplateSystem();
+            
+            const spinner = ora(`Installing ${argv.package}...`).start();
+            await templateSystem.installPackage(argv.package, {
+              version: argv.version,
+              global: argv.global
+            });
+            spinner.succeed(`Successfully installed ${argv.package}`);
+          } catch (error) {
+            console.error(chalk.red(`❌ Installation failed: ${error}`));
+          }
+        }
+      )
+      .command(
+        'validate <package>',
+        'Validate a template package',
+        (yargs) => {
+          return yargs
+            .positional('package', {
+              describe: 'Package name or path',
+              type: 'string'
+            });
+        },
+        async (argv) => {
+          try {
+            if (!argv.package) {
+              console.error(chalk.red('❌ Package name is required'));
+              process.exit(1);
+            }
+            
+            const { TemplateSystem } = await import('./templates/index.js');
+            const templateSystem = new TemplateSystem();
+            
+            const result = await templateSystem.validatePackage(argv.package);
+            
+            if (result.valid) {
+              console.log(chalk.green(`✅ ${argv.package} is valid`));
+            } else {
+              console.log(chalk.red(`❌ ${argv.package} is invalid:`));
+              result.errors.forEach(error => {
+                console.log(chalk.red(`  • ${error}`));
+              });
+              process.exit(1);
+            }
+          } catch (error) {
+            console.error(chalk.red(`❌ Validation failed: ${error}`));
+          }
+        }
+      )
+      .demandCommand(1, 'You must specify a template command')
+      .example('$0 templates list', 'List installed template packages')
+      .example('$0 templates search glsp', 'Search for GLSP templates')
+      .example('$0 templates install my-template', 'Install a template package')
+      .example('$0 templates validate ./my-template', 'Validate a template package');
+  }
+);
+
+// Performance commands
+cli.command(
+  'benchmark',
+  'Run performance benchmarks',
+  (yargs) => {
+    return yargs
+      .option('output', {
+        alias: 'o',
+        describe: 'Output directory for benchmark results',
+        type: 'string',
+        default: './benchmark-results'
+      })
+      .option('iterations', {
+        alias: 'i',
+        describe: 'Number of benchmark iterations',
+        type: 'number',
+        default: 1
+      })
+      .option('verbose', {
+        alias: 'v',
+        describe: 'Verbose output',
+        type: 'boolean',
+        default: false
+      })
+      .example('$0 benchmark', 'Run all benchmarks')
+      .example('$0 benchmark -o ./results', 'Save results to custom directory');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue('🏃 Running performance benchmarks...'));
+      
+      const { BenchmarkSuite } = await import('../scripts/benchmark.js');
+      const suite = new BenchmarkSuite();
+      
+      await suite.runAll();
+      
+      console.log(chalk.green('✅ Benchmarks completed'));
+      console.log(chalk.gray(`Results saved to: ${argv.output}`));
+    } catch (error) {
+      console.error(chalk.red(`❌ Benchmark failed: ${error}`));
+    }
+  }
+);
+
+cli.command(
+  'profile <grammar> [output]',
+  'Profile grammar generation performance',
+  (yargs) => {
+    return yargs
+      .positional('grammar', {
+        describe: 'Langium grammar file',
+        type: 'string'
+      })
+      .positional('output', {
+        describe: 'Output directory',
+        type: 'string',
+        default: './profile-output'
+      })
+      .option('report', {
+        alias: 'r',
+        describe: 'Generate performance report',
+        type: 'string',
+        default: './performance-report.json'
+      })
+      .option('format', {
+        alias: 'f',
+        describe: 'Report format',
+        choices: ['json', 'html', 'text'],
+        default: 'json'
+      })
+      .example('$0 profile grammar.langium', 'Profile grammar generation')
+      .example('$0 profile grammar.langium -r report.html -f html', 'Generate HTML report');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue('📊 Profiling grammar generation...'));
+      
+      const { GLSPGenerator } = await import('./generator.js');
+      const { PerformanceOptimizer } = await import('./performance/index.js');
+      
+      // Create generator with profiling enabled
+      const perfConfig = {
+        enableCaching: true,
+        enableParallelProcessing: true,
+        enableStreaming: true,
+        enableProgressIndicators: true,
+        enableMemoryMonitoring: true,
+        profileMode: true
+      };
+      
+      const optimizer = new PerformanceOptimizer(perfConfig);
+      const generator = new GLSPGenerator();
+      
+      if (!argv.grammar) {
+        console.error(chalk.red('❌ Grammar parameter is required'));
+        process.exit(1);
+      }
+
+      // Generate with profiling
+      await generator.generateExtension(argv.grammar, argv.output, {
+        performanceOptions: perfConfig
+      });
+      
+      // Save performance report
+      const monitor = optimizer.getMonitor();
+      const validFormats = ['json', 'html', 'text'] as const;
+      type ReportFormat = typeof validFormats[number];
+      const format = (validFormats.includes(argv.format as ReportFormat)) ? argv.format as ReportFormat : 'json';
+      
+      await monitor.saveReport(argv.report, format);
+      
+      console.log(chalk.green('✅ Profiling completed'));
+      console.log(chalk.gray(`Report saved to: ${argv.report}`));
+    } catch (error) {
+      console.error(chalk.red(`❌ Profiling failed: ${error}`));
+    }
+  }
+);
+
+cli.command(
+  'cache',
+  'Manage performance cache',
+  (yargs) => {
+    return yargs
+      .command(
+        'clear',
+        'Clear all caches',
+        {},
+        async () => {
+          try {
+            const { AdvancedCacheManager } = await import('./performance/cache-manager.js');
+            const cacheManager = new AdvancedCacheManager();
+            
+            cacheManager.invalidateAll();
+            console.log(chalk.green('✅ Cache cleared'));
+          } catch (error) {
+            console.error(chalk.red(`❌ Failed to clear cache: ${error}`));
+          }
+        }
+      )
+      .command(
+        'stats',
+        'Show cache statistics',
+        {},
+        async () => {
+          try {
+            const { AdvancedCacheManager } = await import('./performance/cache-manager.js');
+            const cacheManager = new AdvancedCacheManager();
+            
+            const stats = cacheManager.getStats();
+            
+            console.log(chalk.blue('📊 Cache Statistics:'));
+            console.log(`  Hits: ${stats.hits}`);
+            console.log(`  Misses: ${stats.misses}`);
+            console.log(`  Hit Rate: ${stats.hits > 0 ? ((stats.hits / (stats.hits + stats.misses)) * 100).toFixed(1) : 0}%`);
+            console.log(`  Entries: ${stats.entryCount}`);
+            console.log(`  Total Size: ${formatBytes(stats.totalSize)}`);
+            console.log(`  Evictions: ${stats.evictions}`);
+          } catch (error) {
+            console.error(chalk.red(`❌ Failed to get cache stats: ${error}`));
+          }
+        }
+      )
+      .demandCommand(1, 'You must specify a cache command')
+      .example('$0 cache clear', 'Clear all caches')
+      .example('$0 cache stats', 'Show cache statistics');
+  }
+);
+
+// Helper function for formatting bytes
+function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+
+  return `${value.toFixed(1)}${units[unitIndex]}`;
+}
+
 // Interactive mode when no arguments provided
 if (process.argv.length <= 2) {
   (async () => {
@@ -1552,6 +1907,10 @@ if (process.argv.length <= 2) {
         { title: 'Initialize configuration', value: 'init' },
         { title: 'Validate configuration', value: 'validate-config' },
         { title: 'Clean generated files', value: 'clean' },
+        { title: 'Manage templates', value: 'templates' },
+        { title: 'Run benchmarks', value: 'benchmark' },
+        { title: 'Profile generation', value: 'profile' },
+        { title: 'Manage cache', value: 'cache' },
         { title: 'Show help', value: 'help' },
         { title: 'Exit', value: 'exit' }
       ]
@@ -1765,6 +2124,84 @@ if (process.argv.length <= 2) {
       if (inputs.grammar) {
         cli.parse([response.command, inputs.grammar, inputs.output]);
       }
+    } else if (response.command === 'templates') {
+      const templateAction = await prompts({
+        type: 'select',
+        name: 'action',
+        message: 'What would you like to do with templates?',
+        choices: [
+          { title: 'List installed packages', value: 'list' },
+          { title: 'Search for packages', value: 'search' },
+          { title: 'Install a package', value: 'install' },
+          { title: 'Validate a package', value: 'validate' }
+        ]
+      });
+
+      if (templateAction.action === 'search') {
+        const query = await prompts({
+          type: 'text',
+          name: 'query',
+          message: 'Enter search query:'
+        });
+        if (query.query) {
+          cli.parse(['templates', 'search', query.query]);
+        }
+      } else if (templateAction.action === 'install') {
+        const packageInput = await prompts({
+          type: 'text',
+          name: 'package',
+          message: 'Enter package name:'
+        });
+        if (packageInput.package) {
+          cli.parse(['templates', 'install', packageInput.package]);
+        }
+      } else if (templateAction.action === 'validate') {
+        const packageInput = await prompts({
+          type: 'text',
+          name: 'package',
+          message: 'Enter package name or path:'
+        });
+        if (packageInput.package) {
+          cli.parse(['templates', 'validate', packageInput.package]);
+        }
+      } else {
+        cli.parse(['templates', templateAction.action]);
+      }
+    } else if (response.command === 'profile') {
+      const inputs = await prompts([
+        {
+          type: 'text',
+          name: 'grammar',
+          message: 'Grammar file:',
+          validate: async (value) => {
+            if (!value) return 'Grammar file is required';
+            if (!await fs.pathExists(value)) return 'File not found';
+            return true;
+          }
+        },
+        {
+          type: 'text',
+          name: 'output',
+          message: 'Output directory:',
+          initial: './profile-output'
+        }
+      ]);
+
+      if (inputs.grammar) {
+        cli.parse(['profile', inputs.grammar, inputs.output]);
+      }
+    } else if (response.command === 'cache') {
+      const cacheAction = await prompts({
+        type: 'select',
+        name: 'action',
+        message: 'What would you like to do with cache?',
+        choices: [
+          { title: 'Show statistics', value: 'stats' },
+          { title: 'Clear cache', value: 'clear' }
+        ]
+      });
+
+      cli.parse(['cache', cacheAction.action]);
     } else {
       cli.parse([response.command]);
     }
