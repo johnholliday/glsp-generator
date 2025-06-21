@@ -13,6 +13,7 @@ import { ValidationResult } from './validation/types.js';
 import { getTemplatesDir } from './utils/paths.js';
 import { DocumentationGenerator } from './documentation/documentation-generator.js';
 import { DocumentationOptions } from './documentation/types.js';
+import { TypeSafetyGenerator, TypeSafetyOptions } from './type-safety/index.js';
 
 export class GLSPGenerator {
   private parser: IGrammarParser;
@@ -21,6 +22,7 @@ export class GLSPGenerator {
   private linter: GrammarLinter;
   private reporter: ValidationReporter;
   private documentationGenerator: DocumentationGenerator;
+  private typeSafetyGenerator: TypeSafetyGenerator;
 
   constructor(config?: GLSPConfig, parser?: IGrammarParser) {
     this.parser = parser || new LangiumGrammarParser();
@@ -28,13 +30,19 @@ export class GLSPGenerator {
     this.linter = new GrammarLinter(this.config.linter);
     this.reporter = new ValidationReporter();
     this.documentationGenerator = new DocumentationGenerator();
+    this.typeSafetyGenerator = new TypeSafetyGenerator();
     this.registerHandlebarsHelpers();
   }
 
   async generateExtension(
     grammarFile: string,
     outputDir: string = '.',
-    options?: { generateDocs?: boolean; docsOptions?: DocumentationOptions }
+    options?: { 
+      generateDocs?: boolean; 
+      docsOptions?: DocumentationOptions;
+      generateTypeSafety?: boolean;
+      typeSafetyOptions?: TypeSafetyOptions;
+    }
   ): Promise<void> {
     console.log(chalk.blue('🔄 Parsing grammar file...'));
     const grammar = await this.parser.parseGrammarFile(grammarFile);
@@ -68,6 +76,11 @@ export class GLSPGenerator {
     // Generate documentation if requested
     if (options?.generateDocs) {
       await this.generateDocumentation(grammarFile, extensionDir, options.docsOptions);
+    }
+    
+    // Generate type safety if requested
+    if (options?.generateTypeSafety) {
+      await this.generateTypeSafety(grammarFile, extensionDir, options.typeSafetyOptions);
     }
   }
 
@@ -311,6 +324,33 @@ export class GLSPGenerator {
       console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
       console.error(chalk.red('❌ Some documentation generation failed:'));
+      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+    }
+  }
+  
+  async generateTypeSafety(
+    grammarFile: string,
+    outputDir: string = '.',
+    options?: TypeSafetyOptions
+  ): Promise<void> {
+    console.log(chalk.blue('🔒 Generating type safety features...'));
+    
+    // Parse grammar
+    const grammar = await this.parser.parseGrammarFile(grammarFile);
+    
+    // Generate type safety
+    const result = await this.typeSafetyGenerator.generate(
+      grammar,
+      this.config,
+      outputDir,
+      options
+    );
+    
+    if (result.success) {
+      console.log(chalk.green('✅ Type safety features generated successfully!'));
+      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+    } else {
+      console.error(chalk.red('❌ Some type safety generation failed:'));
       result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
     }
   }

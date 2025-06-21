@@ -102,6 +102,41 @@ cli.command(
         choices: ['light', 'dark'],
         default: 'light'
       })
+      .option('types', {
+        describe: 'Generate type safety features',
+        type: 'boolean',
+        default: false
+      })
+      .option('types-all', {
+        describe: 'Generate all type safety features',
+        type: 'boolean',
+        default: false
+      })
+      .option('types-declarations', {
+        describe: 'Generate TypeScript declarations',
+        type: 'boolean',
+        default: true
+      })
+      .option('types-validation', {
+        describe: 'Generate runtime validation',
+        type: 'boolean',
+        default: true
+      })
+      .option('types-guards', {
+        describe: 'Generate type guards',
+        type: 'boolean',
+        default: true
+      })
+      .option('types-zod', {
+        describe: 'Generate Zod schemas',
+        type: 'boolean',
+        default: true
+      })
+      .option('types-utilities', {
+        describe: 'Generate type utilities',
+        type: 'boolean',
+        default: true
+      })
       .example('$0 gen state-machine.langium', 'Generate with default output')
       .example('$0 gen grammar.langium ./my-extension', 'Custom output directory')
       .example('$0 gen grammar.langium -w', 'Generate and watch for changes')
@@ -198,6 +233,14 @@ cli.command(
         generateDocs: argv.docs,
         docsOptions: {
           theme: argv['docs-theme'] as 'light' | 'dark'
+        },
+        generateTypeSafety: argv.types || argv['types-all'],
+        typeSafetyOptions: argv['types-all'] ? {} : {
+          declarations: argv['types-declarations'],
+          validation: argv['types-validation'],
+          guards: argv['types-guards'],
+          zodSchemas: argv['types-zod'],
+          utilities: argv['types-utilities']
         }
       });
       generateSpinner.succeed('Generation complete');
@@ -231,6 +274,14 @@ cli.command(
               generateDocs: argv.docs,
               docsOptions: {
                 theme: argv['docs-theme'] as 'light' | 'dark'
+              },
+              generateTypeSafety: argv.types || argv['types-all'],
+              typeSafetyOptions: argv['types-all'] ? {} : {
+                declarations: argv['types-declarations'],
+                validation: argv['types-validation'],
+                guards: argv['types-guards'],
+                zodSchemas: argv['types-zod'],
+                utilities: argv['types-utilities']
               }
             });
             console.log(chalk.green('✅ Regenerated successfully'));
@@ -422,6 +473,98 @@ cli.command(
       
     } catch (error) {
       console.error(chalk.red('❌ Watch mode failed:'), error);
+      process.exit(1);
+    }
+  }
+);
+
+// Type safety command
+cli.command(
+  ['types <grammar> [output]', 'type', 't'],
+  'Generate type safety features from Langium grammar',
+  (yargs) => {
+    return yargs
+      .positional('grammar', {
+        describe: 'Langium grammar file',
+        type: 'string',
+        normalize: true
+      })
+      .positional('output', {
+        describe: 'Output directory',
+        type: 'string',
+        default: '.',
+        normalize: true
+      })
+      .option('declarations', {
+        describe: 'Generate TypeScript declarations',
+        type: 'boolean',
+        default: true
+      })
+      .option('validation', {
+        describe: 'Generate runtime validation',
+        type: 'boolean',
+        default: true
+      })
+      .option('guards', {
+        describe: 'Generate type guards',
+        type: 'boolean',
+        default: true
+      })
+      .option('zod', {
+        describe: 'Generate Zod schemas',
+        type: 'boolean',
+        default: true
+      })
+      .option('utilities', {
+        describe: 'Generate type utilities',
+        type: 'boolean',
+        default: true
+      })
+      .option('all', {
+        describe: 'Generate all type safety features',
+        type: 'boolean',
+        default: false
+      })
+      .option('config', {
+        alias: 'c',
+        describe: 'Configuration file',
+        type: 'string'
+      })
+      .example('$0 types grammar.langium', 'Generate all type safety features')
+      .example('$0 types grammar.langium --no-zod', 'Skip Zod schema generation')
+      .example('$0 types grammar.langium --guards --validation', 'Only guards and validation');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue.bold('🔒 Generating Type Safety Features'));
+      
+      const grammarFile = argv.grammar;
+      if (!grammarFile || !await fs.pathExists(grammarFile)) {
+        console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
+        process.exit(1);
+      }
+
+      // Load configuration if specified
+      let config = undefined;
+      if (argv.config) {
+        const configLoader = new ConfigLoader();
+        config = await configLoader.loadConfig(process.cwd(), argv.config);
+      }
+
+      const generator = new GLSPGenerator(config);
+      
+      const typeSafetyOptions = argv.all ? {} : {
+        declarations: argv.declarations,
+        validation: argv.validation,
+        guards: argv.guards,
+        zodSchemas: argv.zod,
+        utilities: argv.utilities
+      };
+
+      await generator.generateTypeSafety(grammarFile, argv.output!, typeSafetyOptions);
+      
+    } catch (error) {
+      console.error(chalk.red(`❌ Type safety generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
     }
   }
