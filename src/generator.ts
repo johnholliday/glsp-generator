@@ -14,6 +14,8 @@ import { getTemplatesDir } from './utils/paths.js';
 import { DocumentationGenerator } from './documentation/documentation-generator.js';
 import { DocumentationOptions } from './documentation/types.js';
 import { TypeSafetyGenerator, TypeSafetyOptions } from './type-safety/index.js';
+import { TestGenerator, TestGeneratorOptions } from './test-generation/index.js';
+import { CICDGenerator, CICDGeneratorOptions } from './cicd/index.js';
 
 export class GLSPGenerator {
   private parser: IGrammarParser;
@@ -23,6 +25,8 @@ export class GLSPGenerator {
   private reporter: ValidationReporter;
   private documentationGenerator: DocumentationGenerator;
   private typeSafetyGenerator: TypeSafetyGenerator;
+  private testGenerator: TestGenerator;
+  private cicdGenerator: CICDGenerator;
 
   constructor(config?: GLSPConfig, parser?: IGrammarParser) {
     this.parser = parser || new LangiumGrammarParser();
@@ -31,6 +35,8 @@ export class GLSPGenerator {
     this.reporter = new ValidationReporter();
     this.documentationGenerator = new DocumentationGenerator();
     this.typeSafetyGenerator = new TypeSafetyGenerator();
+    this.testGenerator = new TestGenerator();
+    this.cicdGenerator = new CICDGenerator();
     this.registerHandlebarsHelpers();
   }
 
@@ -42,6 +48,10 @@ export class GLSPGenerator {
       docsOptions?: DocumentationOptions;
       generateTypeSafety?: boolean;
       typeSafetyOptions?: TypeSafetyOptions;
+      generateTests?: boolean;
+      testOptions?: TestGeneratorOptions;
+      generateCICD?: boolean;
+      cicdOptions?: CICDGeneratorOptions;
     }
   ): Promise<void> {
     console.log(chalk.blue('🔄 Parsing grammar file...'));
@@ -81,6 +91,16 @@ export class GLSPGenerator {
     // Generate type safety if requested
     if (options?.generateTypeSafety) {
       await this.generateTypeSafety(grammarFile, extensionDir, options.typeSafetyOptions);
+    }
+    
+    // Generate tests if requested
+    if (options?.generateTests) {
+      await this.generateTests(grammarFile, extensionDir, options.testOptions);
+    }
+    
+    // Generate CI/CD if requested
+    if (options?.generateCICD) {
+      await this.generateCICD(grammarFile, extensionDir, options.cicdOptions);
     }
   }
 
@@ -351,6 +371,60 @@ export class GLSPGenerator {
       console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
       console.error(chalk.red('❌ Some type safety generation failed:'));
+      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+    }
+  }
+  
+  async generateTests(
+    grammarFile: string,
+    outputDir: string = '.',
+    options?: TestGeneratorOptions
+  ): Promise<void> {
+    console.log(chalk.blue('🧪 Generating test infrastructure...'));
+    
+    // Parse grammar
+    const grammar = await this.parser.parseGrammarFile(grammarFile);
+    
+    // Generate tests
+    const result = await this.testGenerator.generate(
+      grammar,
+      this.config,
+      outputDir,
+      options
+    );
+    
+    if (result.success) {
+      console.log(chalk.green('✅ Test infrastructure generated successfully!'));
+      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+    } else {
+      console.error(chalk.red('❌ Some test generation failed:'));
+      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+    }
+  }
+  
+  async generateCICD(
+    grammarFile: string,
+    outputDir: string = '.',
+    options?: CICDGeneratorOptions
+  ): Promise<void> {
+    console.log(chalk.blue('🚀 Generating CI/CD configuration...'));
+    
+    // Parse grammar
+    const grammar = await this.parser.parseGrammarFile(grammarFile);
+    
+    // Generate CI/CD
+    const result = await this.cicdGenerator.generate(
+      grammar,
+      this.config,
+      outputDir,
+      options
+    );
+    
+    if (result.success) {
+      console.log(chalk.green('✅ CI/CD configuration generated successfully!'));
+      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+    } else {
+      console.error(chalk.red('❌ Some CI/CD generation failed:'));
       result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
     }
   }

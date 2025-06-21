@@ -137,9 +137,67 @@ cli.command(
         type: 'boolean',
         default: true
       })
+      .option('tests', {
+        describe: 'Generate test infrastructure',
+        type: 'boolean',
+        default: false
+      })
+      .option('tests-unit', {
+        describe: 'Generate unit tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('tests-integration', {
+        describe: 'Generate integration tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('tests-e2e', {
+        describe: 'Generate E2E tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('tests-coverage', {
+        describe: 'Target code coverage percentage',
+        type: 'number',
+        default: 80
+      })
+      .option('ci', {
+        describe: 'Generate CI/CD configuration',
+        type: 'boolean',
+        default: false
+      })
+      .option('ci-platforms', {
+        describe: 'CI platforms to target',
+        type: 'array',
+        choices: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
+        default: ['ubuntu-latest', 'windows-latest']
+      })
+      .option('ci-node-versions', {
+        describe: 'Node.js versions for CI',
+        type: 'array',
+        default: ['16.x', '18.x', '20.x']
+      })
+      .option('ci-publish-npm', {
+        describe: 'Include npm publishing in CI',
+        type: 'boolean',
+        default: true
+      })
+      .option('ci-publish-ovsx', {
+        describe: 'Include Open VSX publishing in CI',
+        type: 'boolean',
+        default: true
+      })
+      .option('ci-docker', {
+        describe: 'Include Docker support in CI',
+        type: 'boolean',
+        default: true
+      })
       .example('$0 gen state-machine.langium', 'Generate with default output')
       .example('$0 gen grammar.langium ./my-extension', 'Custom output directory')
       .example('$0 gen grammar.langium -w', 'Generate and watch for changes')
+      .example('$0 gen grammar.langium --tests', 'Generate with test infrastructure')
+      .example('$0 gen grammar.langium --ci', 'Generate with CI/CD configuration')
       .check((argv) => {
         if (argv.grammar && !argv.grammar.endsWith('.langium')) {
           console.warn(chalk.yellow('⚠️  Warning: File does not have .langium extension'));
@@ -241,6 +299,45 @@ cli.command(
           guards: argv['types-guards'],
           zodSchemas: argv['types-zod'],
           utilities: argv['types-utilities']
+        },
+        generateTests: argv.tests,
+        testOptions: {
+          unitTests: {
+            generateModelTests: argv['tests-unit'],
+            generateValidationTests: argv['tests-unit'],
+            generateTypeGuardTests: argv['tests-unit'],
+            coverage: argv['tests-coverage']
+          },
+          integrationTests: {
+            generateServerTests: argv['tests-integration'],
+            generateHandlerTests: argv['tests-integration'],
+            generateClientTests: argv['tests-integration'],
+            generateCommunicationTests: argv['tests-integration']
+          },
+          e2eTests: {
+            generateBasicTests: argv['tests-e2e'],
+            generateDiagramTests: argv['tests-e2e'],
+            generateModelPersistenceTests: argv['tests-e2e'],
+            generateKeyboardShortcutTests: argv['tests-e2e']
+          },
+          coverage: argv['tests-coverage']
+        },
+        generateCICD: argv.ci,
+        cicdOptions: {
+          platforms: argv['ci-platforms'] as string[],
+          nodeVersions: argv['ci-node-versions'] as string[],
+          publishTargets: [
+            ...(argv['ci-publish-npm'] ? ['npm' as const] : []),
+            ...(argv['ci-publish-ovsx'] ? ['ovsx' as const] : [])
+          ],
+          containerSupport: argv['ci-docker'],
+          workflows: {
+            generateBuildWorkflow: true,
+            generateReleaseWorkflow: true,
+            generateSecurityWorkflow: true,
+            generateDependencyUpdateWorkflow: true,
+            generateNightlyWorkflow: true
+          }
         }
       });
       generateSpinner.succeed('Generation complete');
@@ -282,6 +379,45 @@ cli.command(
                 guards: argv['types-guards'],
                 zodSchemas: argv['types-zod'],
                 utilities: argv['types-utilities']
+              },
+              generateTests: argv.tests,
+              testOptions: {
+                unitTests: {
+                  generateModelTests: argv['tests-unit'],
+                  generateValidationTests: argv['tests-unit'],
+                  generateTypeGuardTests: argv['tests-unit'],
+                  coverage: argv['tests-coverage']
+                },
+                integrationTests: {
+                  generateServerTests: argv['tests-integration'],
+                  generateHandlerTests: argv['tests-integration'],
+                  generateClientTests: argv['tests-integration'],
+                  generateCommunicationTests: argv['tests-integration']
+                },
+                e2eTests: {
+                  generateBasicTests: argv['tests-e2e'],
+                  generateDiagramTests: argv['tests-e2e'],
+                  generateModelPersistenceTests: argv['tests-e2e'],
+                  generateKeyboardShortcutTests: argv['tests-e2e']
+                },
+                coverage: argv['tests-coverage']
+              },
+              generateCICD: argv.ci,
+              cicdOptions: {
+                platforms: argv['ci-platforms'] as string[],
+                nodeVersions: argv['ci-node-versions'] as string[],
+                publishTargets: [
+                  ...(argv['ci-publish-npm'] ? ['npm' as const] : []),
+                  ...(argv['ci-publish-ovsx'] ? ['ovsx' as const] : [])
+                ],
+                containerSupport: argv['ci-docker'],
+                workflows: {
+                  generateBuildWorkflow: true,
+                  generateReleaseWorkflow: true,
+                  generateSecurityWorkflow: true,
+                  generateDependencyUpdateWorkflow: true,
+                  generateNightlyWorkflow: true
+                }
               }
             });
             console.log(chalk.green('✅ Regenerated successfully'));
@@ -565,6 +701,278 @@ cli.command(
       
     } catch (error) {
       console.error(chalk.red(`❌ Type safety generation failed: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  }
+);
+
+// Test generation command
+cli.command(
+  ['test <grammar> [output]', 'tests'],
+  'Generate test infrastructure from Langium grammar',
+  (yargs) => {
+    return yargs
+      .positional('grammar', {
+        describe: 'Langium grammar file',
+        type: 'string',
+        normalize: true
+      })
+      .positional('output', {
+        describe: 'Output directory',
+        type: 'string',
+        default: '.',
+        normalize: true
+      })
+      .option('unit', {
+        describe: 'Generate unit tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('integration', {
+        describe: 'Generate integration tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('e2e', {
+        describe: 'Generate E2E tests',
+        type: 'boolean',
+        default: true
+      })
+      .option('factories', {
+        describe: 'Generate test data factories',
+        type: 'boolean',
+        default: true
+      })
+      .option('config', {
+        describe: 'Generate test configurations',
+        type: 'boolean',
+        default: true
+      })
+      .option('coverage', {
+        describe: 'Target code coverage percentage',
+        type: 'number',
+        default: 80
+      })
+      .option('no-install', {
+        describe: 'Skip installing test dependencies',
+        type: 'boolean',
+        default: false
+      })
+      .example('$0 test grammar.langium', 'Generate all test infrastructure')
+      .example('$0 test grammar.langium --unit --coverage 90', 'Unit tests with 90% coverage')
+      .example('$0 test grammar.langium --e2e --no-install', 'E2E tests without installing deps');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue.bold('🧪 Generating Test Infrastructure'));
+      
+      const grammarFile = argv.grammar;
+      if (!grammarFile || !await fs.pathExists(grammarFile)) {
+        console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
+        process.exit(1);
+      }
+
+      const generator = new GLSPGenerator();
+      
+      const testOptions = {
+        unitTests: {
+          generateModelTests: argv.unit,
+          generateValidationTests: argv.unit,
+          generateTypeGuardTests: argv.unit,
+          generateFactoryTests: argv.factories,
+          coverage: argv.coverage
+        },
+        integrationTests: {
+          generateServerTests: argv.integration,
+          generateHandlerTests: argv.integration,
+          generateClientTests: argv.integration,
+          generateCommunicationTests: argv.integration
+        },
+        e2eTests: {
+          generateBasicTests: argv.e2e,
+          generateDiagramTests: argv.e2e,
+          generateModelPersistenceTests: argv.e2e,
+          generateKeyboardShortcutTests: argv.e2e
+        },
+        testData: {
+          generateModelFactories: argv.factories,
+          generateBuilders: argv.factories,
+          generateMothers: argv.factories
+        },
+        testConfig: {
+          generateJestConfig: argv.config,
+          generatePlaywrightConfig: argv.config && argv.e2e,
+          generateCoverageConfig: argv.config,
+          generateGithubActions: argv.config
+        },
+        coverage: argv.coverage
+      };
+
+      await generator.generateTests(grammarFile, argv.output!, testOptions);
+      
+      if (!argv['no-install']) {
+        console.log(chalk.blue('\n📦 Installing test dependencies...'));
+        const { execSync } = await import('child_process');
+        
+        try {
+          execSync('npm install --save-dev jest @jest/globals ts-jest @types/jest @faker-js/faker uuid @types/uuid', {
+            cwd: argv.output,
+            stdio: 'inherit'
+          });
+          
+          if (argv.e2e) {
+            execSync('npm install --save-dev @playwright/test playwright', {
+              cwd: argv.output,
+              stdio: 'inherit'
+            });
+            execSync('npx playwright install', {
+              cwd: argv.output,
+              stdio: 'inherit'
+            });
+          }
+          
+          console.log(chalk.green('✅ Test dependencies installed'));
+        } catch (error) {
+          console.warn(chalk.yellow('⚠️  Failed to install dependencies - run npm install manually'));
+        }
+      }
+      
+      console.log(chalk.gray('\nNext steps:'));
+      console.log(chalk.gray(`  cd ${argv.output}`));
+      if (argv['no-install']) {
+        console.log(chalk.gray('  npm install'));
+      }
+      console.log(chalk.gray('  npm test'));
+      
+    } catch (error) {
+      console.error(chalk.red(`❌ Test generation failed: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  }
+);
+
+// CI/CD command
+cli.command(
+  ['cicd <grammar> [output]', 'ci'],
+  'Generate CI/CD configuration from Langium grammar',
+  (yargs) => {
+    return yargs
+      .positional('grammar', {
+        describe: 'Langium grammar file',
+        type: 'string',
+        normalize: true
+      })
+      .positional('output', {
+        describe: 'Output directory',
+        type: 'string',
+        default: '.',
+        normalize: true
+      })
+      .option('workflows', {
+        describe: 'Generate GitHub Actions workflows',
+        type: 'boolean',
+        default: true
+      })
+      .option('scripts', {
+        describe: 'Generate release scripts',
+        type: 'boolean',
+        default: true
+      })
+      .option('platforms', {
+        describe: 'CI platforms to target',
+        type: 'array',
+        choices: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
+        default: ['ubuntu-latest', 'windows-latest']
+      })
+      .option('node-versions', {
+        describe: 'Node.js versions for CI',
+        type: 'array',
+        default: ['16.x', '18.x', '20.x']
+      })
+      .option('publish-npm', {
+        describe: 'Include npm publishing',
+        type: 'boolean',
+        default: true
+      })
+      .option('publish-ovsx', {
+        describe: 'Include Open VSX publishing',
+        type: 'boolean',
+        default: true
+      })
+      .option('docker', {
+        describe: 'Include Docker support',
+        type: 'boolean',
+        default: true
+      })
+      .option('semantic-release', {
+        describe: 'Use semantic-release',
+        type: 'boolean',
+        default: false
+      })
+      .option('config', {
+        alias: 'c',
+        describe: 'Configuration file',
+        type: 'string'
+      })
+      .example('$0 cicd grammar.langium', 'Generate all CI/CD files')
+      .example('$0 cicd grammar.langium --platforms ubuntu-latest', 'Ubuntu only')
+      .example('$0 cicd grammar.langium --semantic-release', 'Use semantic-release');
+  },
+  async (argv) => {
+    try {
+      console.log(chalk.blue.bold('🚀 Generating CI/CD Configuration'));
+      
+      const grammarFile = argv.grammar;
+      if (!grammarFile || !await fs.pathExists(grammarFile)) {
+        console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
+        process.exit(1);
+      }
+
+      // Load configuration if specified
+      let config = undefined;
+      if (argv.config) {
+        const configLoader = new ConfigLoader();
+        config = await configLoader.loadConfig(process.cwd(), argv.config);
+      }
+
+      const generator = new GLSPGenerator(config);
+      
+      const cicdOptions = {
+        platforms: argv.platforms as string[],
+        nodeVersions: argv['node-versions'] as string[],
+        publishTargets: [
+          ...(argv['publish-npm'] ? ['npm' as const] : []),
+          ...(argv['publish-ovsx'] ? ['ovsx' as const] : [])
+        ],
+        containerSupport: argv.docker,
+        workflows: {
+          generateBuildWorkflow: argv.workflows,
+          generateReleaseWorkflow: argv.workflows,
+          generateSecurityWorkflow: argv.workflows,
+          generateDependencyUpdateWorkflow: argv.workflows,
+          generateNightlyWorkflow: argv.workflows
+        },
+        releaseScripts: {
+          generateVersionScripts: argv.scripts,
+          generateChangelogScripts: argv.scripts,
+          generatePublishScripts: argv.scripts,
+          generateReleaseScript: argv.scripts,
+          semanticRelease: argv['semantic-release']
+        }
+      };
+
+      await generator.generateCICD(grammarFile, argv.output!, cicdOptions);
+      
+      console.log(chalk.gray('\nNext steps:'));
+      console.log(chalk.gray('1. Add secrets to your GitHub repository:'));
+      console.log(chalk.gray('   - NPM_TOKEN (for npm publishing)'));
+      console.log(chalk.gray('   - OVSX_TOKEN (for Open VSX publishing)'));
+      console.log(chalk.gray('   - CODECOV_TOKEN (for coverage reports)'));
+      console.log(chalk.gray('2. Enable branch protection rules'));
+      console.log(chalk.gray('3. Configure Dependabot/Renovate'));
+      
+    } catch (error) {
+      console.error(chalk.red(`❌ CI/CD generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
     }
   }
@@ -1135,6 +1543,10 @@ if (process.argv.length <= 2) {
       message: 'What would you like to do?',
       choices: [
         { title: 'Generate GLSP extension', value: 'generate' },
+        { title: 'Generate test infrastructure', value: 'test' },
+        { title: 'Generate CI/CD configuration', value: 'cicd' },
+        { title: 'Generate documentation', value: 'docs' },
+        { title: 'Generate type safety', value: 'types' },
         { title: 'Validate grammar', value: 'validate' },
         { title: 'Create new project', value: 'new' },
         { title: 'Initialize configuration', value: 'init' },
@@ -1231,6 +1643,127 @@ if (process.argv.length <= 2) {
       
       if (inputs.config) {
         cli.parse(['validate-config', inputs.config]);
+      }
+    } else if (response.command === 'test') {
+      const inputs = await prompts([
+        {
+          type: 'text',
+          name: 'grammar',
+          message: 'Grammar file:',
+          validate: async (value) => {
+            if (!value) return 'Grammar file is required';
+            if (!await fs.pathExists(value)) return 'File not found';
+            return true;
+          }
+        },
+        {
+          type: 'text',
+          name: 'output',
+          message: 'Output directory:',
+          initial: '.'
+        },
+        {
+          type: 'multiselect',
+          name: 'testTypes',
+          message: 'Select test types to generate:',
+          choices: [
+            { title: 'Unit tests', value: 'unit', selected: true },
+            { title: 'Integration tests', value: 'integration', selected: true },
+            { title: 'E2E tests', value: 'e2e', selected: true },
+            { title: 'Test factories', value: 'factories', selected: true }
+          ]
+        },
+        {
+          type: 'number',
+          name: 'coverage',
+          message: 'Target coverage percentage:',
+          initial: 80,
+          min: 0,
+          max: 100
+        }
+      ]);
+
+      if (inputs.grammar) {
+        const args = ['test', inputs.grammar, inputs.output];
+        if (!inputs.testTypes.includes('unit')) args.push('--no-unit');
+        if (!inputs.testTypes.includes('integration')) args.push('--no-integration');
+        if (!inputs.testTypes.includes('e2e')) args.push('--no-e2e');
+        if (!inputs.testTypes.includes('factories')) args.push('--no-factories');
+        args.push('--coverage', inputs.coverage.toString());
+        cli.parse(args);
+      }
+    } else if (response.command === 'cicd') {
+      const inputs = await prompts([
+        {
+          type: 'text',
+          name: 'grammar',
+          message: 'Grammar file:',
+          validate: async (value) => {
+            if (!value) return 'Grammar file is required';
+            if (!await fs.pathExists(value)) return 'File not found';
+            return true;
+          }
+        },
+        {
+          type: 'text',
+          name: 'output',
+          message: 'Output directory:',
+          initial: '.'
+        },
+        {
+          type: 'multiselect',
+          name: 'features',
+          message: 'Select CI/CD features:',
+          choices: [
+            { title: 'GitHub Actions workflows', value: 'workflows', selected: true },
+            { title: 'Release scripts', value: 'scripts', selected: true },
+            { title: 'Docker support', value: 'docker', selected: true },
+            { title: 'Semantic release', value: 'semantic', selected: false }
+          ]
+        },
+        {
+          type: 'multiselect',
+          name: 'platforms',
+          message: 'Select CI platforms:',
+          choices: [
+            { title: 'Ubuntu', value: 'ubuntu-latest', selected: true },
+            { title: 'Windows', value: 'windows-latest', selected: true },
+            { title: 'macOS', value: 'macos-latest', selected: false }
+          ]
+        }
+      ]);
+
+      if (inputs.grammar) {
+        const args = ['cicd', inputs.grammar, inputs.output];
+        if (!inputs.features.includes('workflows')) args.push('--no-workflows');
+        if (!inputs.features.includes('scripts')) args.push('--no-scripts');
+        if (!inputs.features.includes('docker')) args.push('--no-docker');
+        if (inputs.features.includes('semantic')) args.push('--semantic-release');
+        args.push('--platforms', ...inputs.platforms);
+        cli.parse(args);
+      }
+    } else if (response.command === 'docs' || response.command === 'types') {
+      const inputs = await prompts([
+        {
+          type: 'text',
+          name: 'grammar',
+          message: 'Grammar file:',
+          validate: async (value) => {
+            if (!value) return 'Grammar file is required';
+            if (!await fs.pathExists(value)) return 'File not found';
+            return true;
+          }
+        },
+        {
+          type: 'text',
+          name: 'output',
+          message: 'Output directory:',
+          initial: '.'
+        }
+      ]);
+
+      if (inputs.grammar) {
+        cli.parse([response.command, inputs.grammar, inputs.output]);
       }
     } else {
       cli.parse([response.command]);

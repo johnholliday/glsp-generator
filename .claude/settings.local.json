@@ -31,7 +31,8 @@
       "Bash(NODE_ENV=test npx jest --maxWorkers=1 --no-coverage)",
       "Bash(/mnt/c/nvm4w/nodejs/yarn test)",
       "Bash(yarn copy-templates:*)",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(tsc)"
     ],
     "deny": []
   }
