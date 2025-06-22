@@ -1,3 +1,4 @@
-export class BenchmarkSuite {
-  runAll(): Promise<void>;
+export declare class BenchmarkSuite {
+    constructor();
+    runAll(): Promise<void>;
 }

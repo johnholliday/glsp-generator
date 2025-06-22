@@ -1,5 +1,7 @@
 # Prompt 011: Migration Tools
 
+**STATUS: This feature was implemented but later removed from the project.**
+
 ## Objective
 Create tools to help users migrate from other grammar formats (ANTLR, Xtext) and existing GLSP projects to the Langium-based generator, including automated converters and upgrade assistants.
 

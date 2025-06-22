@@ -166,6 +166,28 @@ node dist/cli.js generate <grammar-file> --validate-only
 
 # Skip validation (use with caution)
 node dist/cli.js generate <grammar-file> --no-validate
+
+# Migration Commands
+# Migrate from ANTLR4
+node dist/cli.js migrate grammar.g4
+
+# Migrate from Xtext
+node dist/cli.js migrate grammar.xtext output.langium
+
+# Extract grammar from GLSP project
+node dist/cli.js migrate ./my-glsp-project -t glsp-project
+
+# Use interactive migration wizard
+node dist/cli.js migrate -i
+
+# Check for generator updates
+node dist/cli.js upgrade --check
+
+# Upgrade to latest version
+node dist/cli.js upgrade
+
+# Upgrade with automatic fixes
+node dist/cli.js upgrade --fix
 ```
 
 ## Architecture and Code Structure
@@ -228,6 +250,32 @@ interface Property {
   validateGrammar(ast: GrammarAST): ValidationResult
   renderTemplates(ast: GrammarAST, outputDir: string): Promise<void>
   ```
+
+#### Migration System (src/migration/)
+- **antlr-converter.ts**: Converts ANTLR4 grammars (.g4) to Langium
+  - Parses ANTLR grammar structure
+  - Converts parser/lexer rules
+  - Preserves semantic actions as comments
+  
+- **xtext-converter.ts**: Converts Xtext grammars to Langium
+  - Handles Xtext-specific syntax
+  - Converts metamodel declarations
+  - Maps terminal and data type rules
+  
+- **glsp-analyzer.ts**: Analyzes existing GLSP TypeScript projects
+  - Extracts interfaces and types using TypeScript compiler API
+  - Detects common GLSP patterns
+  - Generates Langium grammar from extracted types
+  
+- **upgrade-assistant.ts**: Helps upgrade between generator versions
+  - Applies automated fixes for breaking changes
+  - Creates backups before upgrading
+  - Provides upgrade recommendations
+  
+- **migration-wizard.ts**: Interactive migration tool
+  - Guides users through migration process
+  - Auto-detects source format
+  - Previews conversion results
 
 ### Template System
 

@@ -43,7 +43,7 @@ export class ExampleModelGenerator {
             if (index > 0) lines.push('');
             lines.push(`// Creating a simple ${iface.name}`);
             lines.push(`${iface.name} ${this.camelCase(iface.name)}${index + 1} {`);
-            
+
             // Add required properties only
             iface.properties
                 .filter(p => !p.optional)
@@ -51,7 +51,7 @@ export class ExampleModelGenerator {
                     const value = this.generateSimpleValue(prop.type, prop.array, index);
                     lines.push(`    ${prop.name}: ${value}`);
                 });
-            
+
             lines.push('}');
         });
 
@@ -60,10 +60,10 @@ export class ExampleModelGenerator {
             lines.push('');
             lines.push('// Using custom types');
             const firstType = grammar.types[0];
-            const iface = grammar.interfaces.find(i => 
+            const iface = grammar.interfaces.find(i =>
                 i.properties.some(p => p.type === firstType.name)
             );
-            
+
             if (iface) {
                 lines.push(`${iface.name} typedElement {`);
                 iface.properties.forEach(prop => {
@@ -118,7 +118,7 @@ export class ExampleModelGenerator {
                 if (prop.name === 'source') value = '@node1';
                 else if (prop.name === 'target') value = '@node2';
                 else value = this.generateIntermediateValue(prop.type, prop.array, 1, prop.optional) || '""';
-                
+
                 if (!prop.optional || value !== null) {
                     lines.push(`    ${prop.name}: ${value}`);
                 }
@@ -130,11 +130,11 @@ export class ExampleModelGenerator {
         const arrayProp = grammar.interfaces
             .flatMap(i => i.properties)
             .find(p => p.array);
-        
+
         if (arrayProp) {
             lines.push('');
             lines.push('// Example with array properties');
-            const iface = grammar.interfaces.find(i => 
+            const iface = grammar.interfaces.find(i =>
                 i.properties.some(p => p.array)
             );
             if (iface) {
@@ -178,27 +178,27 @@ export class ExampleModelGenerator {
         // Generate instances for all interfaces
         grammar.interfaces.forEach((iface, ifaceIndex) => {
             const instances = [];
-            
+
             // Create 2-3 instances of each interface
             const instanceCount = iface.name.toLowerCase().includes('edge') ? 3 : 2;
-            
+
             for (let i = 1; i <= instanceCount; i++) {
                 const instanceName = `${this.camelCase(iface.name)}${i}`;
                 instances.push(instanceName);
-                
+
                 lines.push(`// ${iface.name} instance ${i}/${instanceCount}`);
                 lines.push(`${iface.name} ${instanceName} {`);
-                
+
                 // Add all properties
                 iface.properties.forEach((prop, propIndex) => {
-                    // Skip some optional properties randomly
-                    if (prop.optional && Math.random() > 0.7) {
+                    // Skip some optional properties randomly, but always include arrays for demonstration
+                    if (prop.optional && !prop.array && Math.random() > 0.7) {
                         lines.push(`    // ${prop.name}: <omitted optional property>`);
                         return;
                     }
-                    
+
                     let value: string;
-                    
+
                     // Generate contextual values
                     if (prop.type === 'string') {
                         if (prop.name === 'id') {
@@ -237,23 +237,23 @@ export class ExampleModelGenerator {
                             value = `@${this.camelCase(prop.type)}1`;
                         }
                     }
-                    
+
                     // Handle arrays
                     if (prop.array) {
                         const item1 = value;
-                        const item2 = value.includes('@') 
+                        const item2 = value.includes('@')
                             ? value.replace(/1/, '2')
                             : value.replace(/_\d+/, `_${i + 1}`);
                         value = `[${item1}, ${item2}]`;
                     }
-                    
+
                     lines.push(`    ${prop.name}: ${value}`);
                 });
-                
+
                 lines.push('}');
                 lines.push('');
             }
-            
+
             elements.set(iface.name, instances);
         });
 
@@ -261,7 +261,7 @@ export class ExampleModelGenerator {
         if (grammar.types.length > 0) {
             lines.push('// Demonstration of all type values');
             lines.push('');
-            
+
             grammar.types.forEach(type => {
                 if (type.unionTypes && type.unionTypes.length > 0) {
                     lines.push(`// All possible values for ${type.name}:`);
@@ -283,7 +283,7 @@ export class ExampleModelGenerator {
 
     private createRealWorldExample(grammar: ParsedGrammar): string {
         const projectName = grammar.projectName.toLowerCase();
-        
+
         // Generate contextual real-world example based on project name
         if (projectName.includes('flow') || projectName.includes('process')) {
             return this.createWorkflowExample(grammar);
@@ -326,7 +326,7 @@ export class ExampleModelGenerator {
                 else if (prop.name === 'x') value = step.x.toString();
                 else if (prop.name === 'y') value = step.y.toString();
                 else value = this.generateContextualValue(prop, step.id);
-                
+
                 lines.push(`    ${prop.name}: ${value}`);
             });
             lines.push('}');
@@ -353,7 +353,7 @@ export class ExampleModelGenerator {
                     else if (prop.name === 'target') value = `@${trans.to}`;
                     else if (prop.name === 'label' || prop.name === 'name') value = `"${trans.label}"`;
                     else value = this.generateContextualValue(prop, `transition${index + 1}`);
-                    
+
                     lines.push(`    ${prop.name}: ${value}`);
                 });
                 lines.push('}');
@@ -371,7 +371,7 @@ export class ExampleModelGenerator {
             ''
         ];
 
-        const stateInterface = grammar.interfaces.find(i => 
+        const stateInterface = grammar.interfaces.find(i =>
             i.name.toLowerCase().includes('state') || i.name.toLowerCase().includes('node')
         ) || grammar.interfaces[0];
 
@@ -391,7 +391,7 @@ export class ExampleModelGenerator {
                 else if (prop.name === 'name') value = `"${state.name}"`;
                 else if (prop.name === 'duration' && prop.type === 'number') value = state.duration.toString();
                 else value = this.generateContextualValue(prop, state.id);
-                
+
                 lines.push(`    ${prop.name}: ${value}`);
             });
             lines.push('}');
@@ -429,7 +429,7 @@ export class ExampleModelGenerator {
                 else if (prop.name === 'type') value = `"${device.type}"`;
                 else if (prop.name === 'ip' || prop.name === 'address') value = `"${device.ip}"`;
                 else value = this.generateContextualValue(prop, device.id);
-                
+
                 lines.push(`    ${prop.name}: ${value}`);
             });
             lines.push('}');
@@ -448,10 +448,10 @@ export class ExampleModelGenerator {
 
         // Use the most appropriate interfaces
         const interfaces = grammar.interfaces.slice(0, Math.min(3, grammar.interfaces.length));
-        
+
         interfaces.forEach((iface, index) => {
             const contextualNames = ['project_setup', 'development_phase', 'testing_phase', 'deployment'];
-            
+
             lines.push(`${iface.name} ${contextualNames[index] || `element${index + 1}`} {`);
             iface.properties.forEach(prop => {
                 const value = this.generateContextualValue(prop, contextualNames[index] || `element${index + 1}`);
@@ -500,9 +500,9 @@ InterfaceName elementName {
 
 \`\`\`
 ${grammar.interfaces[0]?.name || 'Element'} myFirst {
-${grammar.interfaces[0]?.properties.filter(p => !p.optional).slice(0, 2).map(p => 
-    `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
-).join('\n')}
+${grammar.interfaces[0]?.properties.filter(p => !p.optional).slice(0, 2).map(p =>
+            `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
+        ).join('\n')}
 }
 \`\`\`
 
@@ -516,14 +516,14 @@ ${grammar.interfaces[0]?.properties.filter(p => !p.optional).slice(0, 2).map(p =
 \`\`\`
 ${grammar.interfaces[0]?.name || 'Element'} example {
     // Required properties
-${grammar.interfaces[0]?.properties.filter(p => !p.optional).map(p => 
-    `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
-).join('\n')}
+${grammar.interfaces[0]?.properties.filter(p => !p.optional).map(p =>
+            `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
+        ).join('\n')}
     
     // Optional properties (can be omitted)
-${grammar.interfaces[0]?.properties.filter(p => p.optional).slice(0, 2).map(p => 
-    `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
-).join('\n')}
+${grammar.interfaces[0]?.properties.filter(p => p.optional).slice(0, 2).map(p =>
+            `    ${p.name}: ${this.generateSimpleValue(p.type, p.array, 1)}`
+        ).join('\n')}
 }
 \`\`\`
 
@@ -539,20 +539,20 @@ Example usage:
 
 \`\`\`
 ${(() => {
-    const typeUsage = grammar.interfaces.find(i => 
-        i.properties.some(p => grammar.types.some(t => t.name === p.type))
-    );
-    if (typeUsage) {
-        const prop = typeUsage.properties.find(p => 
-            grammar.types.some(t => t.name === p.type)
-        );
-        const type = grammar.types.find(t => t.name === prop?.type);
-        return `${typeUsage.name} typed {
+                    const typeUsage = grammar.interfaces.find(i =>
+                        i.properties.some(p => grammar.types.some(t => t.name === p.type))
+                    );
+                    if (typeUsage) {
+                        const prop = typeUsage.properties.find(p =>
+                            grammar.types.some(t => t.name === p.type)
+                        );
+                        const type = grammar.types.find(t => t.name === prop?.type);
+                        return `${typeUsage.name} typed {
     ${prop?.name}: '${type?.unionTypes?.[0] || 'value'}'
 }`;
-    }
-    return '// No type usage example available';
-})()}
+                    }
+                    return '// No type usage example available';
+                })()}
 \`\`\`
 ` : `### Built-in Types
 
@@ -570,11 +570,11 @@ ${grammar.interfaces[0]?.name || 'Element'} element1 {
 ${grammar.interfaces[1]?.name || grammar.interfaces[0]?.name || 'Element'} element2 {
     ${grammar.interfaces[1]?.properties.find(p => !p.optional)?.name || 'id'}: "elem2"
     ${(() => {
-        const refProp = grammar.interfaces[1]?.properties.find(p => 
-            p.type[0] === p.type[0].toUpperCase() && !['String', 'Number', 'Boolean'].includes(p.type)
-        );
-        return refProp ? `${refProp.name}: @element1` : '// reference: @element1';
-    })()}
+                const refProp = grammar.interfaces[1]?.properties.find(p =>
+                    p.type[0] === p.type[0].toUpperCase() && !['String', 'Number', 'Boolean'].includes(p.type)
+                );
+                return refProp ? `${refProp.name}: @element1` : '// reference: @element1';
+            })()}
 }
 \`\`\`
 
@@ -584,17 +584,17 @@ Properties can hold multiple values using array notation:
 
 \`\`\`
 ${(() => {
-    const ifaceWithArray = grammar.interfaces.find(i => 
-        i.properties.some(p => p.array)
-    );
-    if (ifaceWithArray) {
-        const arrayProp = ifaceWithArray.properties.find(p => p.array);
-        return `${ifaceWithArray.name} container {
+                const ifaceWithArray = grammar.interfaces.find(i =>
+                    i.properties.some(p => p.array)
+                );
+                if (ifaceWithArray) {
+                    const arrayProp = ifaceWithArray.properties.find(p => p.array);
+                    return `${ifaceWithArray.name} container {
     ${arrayProp?.name}: [${this.generateSimpleValue(arrayProp?.type || 'string', false, 1)}, ${this.generateSimpleValue(arrayProp?.type || 'string', false, 2)}]
 }`;
-    }
-    return '// Array example: property: [value1, value2]';
-})()}
+                }
+                return '// Array example: property: [value1, value2]';
+            })()}
 \`\`\`
 
 ## Best Practices
@@ -702,20 +702,20 @@ ${(() => {
         if (isOptional && Math.random() > 0.5) {
             return null;
         }
-        
+
         const baseValue = this.getBaseValue(type, index);
-        
+
         if (isArray) {
             const secondValue = this.getBaseValue(type, index + 1);
             return `[${baseValue}, ${secondValue}]`;
         }
-        
+
         return baseValue;
     }
 
     private generateContextualValue(prop: any, context: string): string {
         const { name, type, array } = prop;
-        
+
         if (type === 'string') {
             if (name === 'id') return `"${context}_id"`;
             if (name === 'name' || name === 'label') return `"${context.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}"`;
@@ -734,7 +734,7 @@ ${(() => {
             if (name.includes('disabled') || name.includes('hidden')) return 'false';
             return Math.random() > 0.5 ? 'true' : 'false';
         }
-        
+
         const baseValue = this.getBaseValue(type, 1);
         return array ? `[${baseValue}]` : baseValue;
     }

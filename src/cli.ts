@@ -993,6 +993,8 @@ cli.command(
   }
 );
 
+
+
 // Documentation command
 cli.command(
   ['docs <grammar> [output]', 'doc', 'd'],
