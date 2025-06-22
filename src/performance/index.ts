@@ -15,6 +15,7 @@ import { GenerationProgress } from './progress-indicator.js';
 import { PerformanceMonitor } from './monitor.js';
 import { MemoryManager } from './memory-manager.js';
 import { PerformanceConfig } from './types.js';
+import os from 'os';
 
 /**
  * Main performance optimization orchestrator
@@ -328,7 +329,6 @@ export class PerformanceUtils {
      * Get system information
      */
     static getSystemInfo() {
-        const os = require('os');
         return {
             platform: os.platform(),
             arch: os.arch(),

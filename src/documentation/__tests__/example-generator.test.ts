@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { ExampleModelGenerator } from '../example-generator.js';
 import { ParsedGrammar } from '../../types/grammar.js';
 import fs from 'fs-extra';

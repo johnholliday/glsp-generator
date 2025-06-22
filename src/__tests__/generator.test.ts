@@ -1,17 +1,35 @@
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs-extra';
 
-// Mock modules to avoid ESM import issues
-jest.mock('chalk', () => {
-  const mockChalk = {
-    blue: jest.fn((str: string) => str),
-    green: jest.fn((str: string) => str),
-    yellow: jest.fn((str: string) => str),
-    red: jest.fn((str: string) => str),
-    gray: jest.fn((str: string) => str),
-    cyan: jest.fn((str: string) => str)
+// Mock chalk with proper ESM and chaining support
+vi.mock('chalk', () => {
+  // Create a proxy-based chainable mock that supports infinite chaining
+  const createChalkMock = () => {
+    const mockFunction = vi.fn((str: string) => String(str || ''));
+
+    // Use Proxy to handle any property access and return chainable mock
+    return new Proxy(mockFunction, {
+      get(target, prop) {
+        // Handle special properties
+        if (prop === 'supportsColor') {
+          return { stdout: { level: 0 }, stderr: { level: 0 } };
+        }
+        if (prop === 'level') return 0;
+        if (prop === 'stderr' || prop === 'stdout') return target;
+
+        // For any style property, return the same chainable mock
+        if (typeof prop === 'string') {
+          return createChalkMock();
+        }
+
+        return target[prop as keyof typeof target];
+      }
+    });
   };
+
+  const mockChalk = createChalkMock();
+
   return {
     __esModule: true,
     default: mockChalk
@@ -32,7 +50,7 @@ describe('GLSPGenerator', () => {
     // Use mock parser with dependency injection
     const mockParser = new MockGrammarParser();
     generator = new GLSPGenerator(undefined, mockParser);
-    
+
     // Ensure clean output directory
     await fs.ensureDir(tempOutputDir);
     await fs.emptyDir(tempOutputDir);
@@ -72,15 +90,15 @@ describe('GLSPGenerator', () => {
     expect(await fs.pathExists(modelFile)).toBe(true);
 
     const modelContent = await fs.readFile(modelFile, 'utf-8');
-    
+
     // Check interfaces extend the correct base
     expect(modelContent).toContain('export interface Node extends');
     expect(modelContent).toContain('export interface Edge extends');
-    
+
     // Check type hierarchy is generated
     expect(modelContent).toContain('node: \'node:Node\'');
     expect(modelContent).toContain('edge: \'edge:Edge\'');
-    
+
     // Check properties are included
     expect(modelContent).toContain('position: Position');
     expect(modelContent).toContain('size?: Size');
@@ -105,7 +123,7 @@ describe('GLSPGenerator', () => {
 
   test('should handle non-existent grammar file', async () => {
     const nonExistentFile = path.join(testDir, 'non-existent.langium');
-    
+
     await expect(generator.generateExtension(nonExistentFile, tempOutputDir))
       .rejects.toThrow();
   });
@@ -130,7 +148,7 @@ describe('GLSPGenerator', () => {
 
     const packageJsonPath = path.join(tempOutputDir, 'custom-extension', 'package.json');
     const packageJson = await fs.readJson(packageJsonPath);
-    
+
     expect(packageJson.name).toBe('custom-extension');
     expect(packageJson.version).toBe('2.0.0');
     expect(packageJson.publisher).toBe('custom-publisher');

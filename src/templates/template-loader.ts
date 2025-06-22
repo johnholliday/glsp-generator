@@ -4,10 +4,10 @@ import { fileURLToPath } from 'url';
 import Handlebars from 'handlebars';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { 
-    TemplateOptions, 
-    TemplateSet, 
-    TemplatePackage, 
+import {
+    TemplateOptions,
+    TemplateSet,
+    TemplatePackage,
     TemplateConfig,
     CompiledTemplate,
     TemplateLoadResult
@@ -22,13 +22,93 @@ export class TemplateLoader {
 
     constructor() {
         this.handlebars = Handlebars.create();
+        this.registerBuiltinHelpers();
+    }
+
+    /**
+     * Register built-in helpers that templates expect
+     */
+    private registerBuiltinHelpers(): void {
+        // Helper for converting strings to lowercase
+        this.handlebars.registerHelper('toLowerCase', (str: string) =>
+            str ? str.toLowerCase() : ''
+        );
+
+        // Helper for converting strings to PascalCase
+        this.handlebars.registerHelper('toPascalCase', (str: string) => {
+            if (!str) return '';
+            return str
+                .split(/[-_\s]+/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join('');
+        });
+
+        // Helper for converting strings to camelCase
+        this.handlebars.registerHelper('toCamelCase', (str: string) => {
+            if (!str) return '';
+            const pascal = str
+                .split(/[-_\s]+/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join('');
+            return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        });
+
+        // Helper for checking if array has elements
+        this.handlebars.registerHelper('hasElements', (arr: any[]) => arr && arr.length > 0);
+
+        // Helper for joining array elements
+        this.handlebars.registerHelper('join', (arr: any[], separator: string) =>
+            arr ? arr.join(separator) : ''
+        );
+
+        // Helper for indentation
+        this.handlebars.registerHelper('indent', (count: number) => '    '.repeat(count));
+
+        // Helper for generating TypeScript property type
+        this.handlebars.registerHelper('tsType', (type: string, optional: boolean, array: boolean) => {
+            let tsType = type;
+            if (array) tsType += '[]';
+            if (optional) tsType += ' | undefined';
+            return tsType;
+        });
+
+        // Helper for equality comparison
+        this.handlebars.registerHelper('eq', (a: any, b: any) => a === b);
+
+        // Helper for inequality comparison
+        this.handlebars.registerHelper('neq', (a: any, b: any) => a !== b);
+
+        // Helper for logical NOT
+        this.handlebars.registerHelper('not', (value: any) => !value);
+
+        // Helper for logical AND
+        this.handlebars.registerHelper('and', (...args: any[]) => {
+            // Remove the last argument (Handlebars options object)
+            const values = args.slice(0, -1);
+            return values.every(v => v);
+        });
+
+        // Helper for logical OR
+        this.handlebars.registerHelper('or', (...args: any[]) => {
+            // Remove the last argument (Handlebars options object)
+            const values = args.slice(0, -1);
+            return values.some(v => v);
+        });
+
+        // Helper for unless (inverse of if)
+        this.handlebars.registerHelper('unless', function (this: any, conditional: any, options: any) {
+            if (!conditional) {
+                return options.fn(this);
+            }
+            return options.inverse(this);
+        });
     }
 
     async loadTemplates(options: TemplateOptions = {}): Promise<TemplateLoadResult> {
         try {
             // Load default templates first
             const defaultTemplates = await this.loadDefaultTemplates();
-            
+
             // Load custom templates if specified
             let customTemplates: TemplatePackage | null = null;
             if (options.templatesPath) {
@@ -57,7 +137,7 @@ export class TemplateLoader {
     private async loadDefaultTemplates(): Promise<TemplatePackage> {
         const templatesDir = getTemplatesDir();
         const configPath = path.join(templatesDir, 'config.json');
-        
+
         let config: TemplateConfig = {
             name: '@glsp-generator/default-templates',
             version: '1.0.0',
@@ -103,10 +183,10 @@ export class TemplateLoader {
             // Try to resolve package
             const packagePath = require.resolve(`${packageName}/package.json`);
             const packageDir = path.dirname(packagePath);
-            
+
             const packageJson = await fs.readJSON(packagePath);
             const templatesDir = path.join(packageDir, 'templates');
-            
+
             if (!await fs.pathExists(templatesDir)) {
                 throw new Error(`Templates directory not found in package: ${packageName}`);
             }
@@ -126,7 +206,7 @@ export class TemplateLoader {
 
             const templatePackage = await this.loadTemplatePackageFromPath(packageDir, config);
             this.loadedPackages.set(packageName, templatePackage);
-            
+
             return templatePackage;
         } catch (error) {
             throw new Error(`Failed to load template package '${packageName}': ${error}`);
@@ -135,7 +215,7 @@ export class TemplateLoader {
 
     private async loadFromGit(repoUrl: string): Promise<TemplatePackage> {
         const tempDir = path.join(process.cwd(), '.tmp-templates');
-        
+
         try {
             // Clean up any existing temp directory
             if (await fs.pathExists(tempDir)) {
@@ -144,10 +224,10 @@ export class TemplateLoader {
 
             // Clone repository
             await execAsync(`git clone ${repoUrl} ${tempDir}`);
-            
+
             // Load from the cloned directory
             const templatePackage = await this.loadFromPath(tempDir);
-            
+
             return templatePackage;
         } finally {
             // Clean up temp directory
@@ -158,17 +238,20 @@ export class TemplateLoader {
     }
 
     private async loadTemplatePackageFromPath(
-        templatePath: string, 
+        templatePath: string,
         config: TemplateConfig
     ): Promise<TemplatePackage> {
         const templates = new Map<string, string>();
         const helpers = new Map<string, string>();
         const partials = new Map<string, string>();
 
-        // Load templates
+        // Load templates - check both 'templates' subdirectory and direct path
         const templatesDir = path.join(templatePath, 'templates');
         if (await fs.pathExists(templatesDir)) {
             await this.loadTemplateFiles(templatesDir, templates, '');
+        } else {
+            // If no 'templates' subdirectory, load directly from templatePath
+            await this.loadTemplateFiles(templatePath, templates, '');
         }
 
         // Load helpers
@@ -210,17 +293,21 @@ export class TemplateLoader {
     }
 
     private async loadTemplateFiles(
-        dir: string, 
-        templates: Map<string, string>, 
+        dir: string,
+        templates: Map<string, string>,
         prefix: string
     ): Promise<void> {
         const entries = await fs.readdir(dir, { withFileTypes: true });
-        
+
         for (const entry of entries) {
             const entryPath = path.join(dir, entry.name);
             const relativeName = prefix ? `${prefix}/${entry.name}` : entry.name;
-            
+
             if (entry.isDirectory()) {
+                // Skip certain directories when loading from root template path
+                if (['node_modules', '.git', 'dist', '__tests__'].includes(entry.name)) {
+                    continue;
+                }
                 await this.loadTemplateFiles(entryPath, templates, relativeName);
             } else if (entry.name.endsWith('.hbs')) {
                 const templateName = relativeName.replace(/\.hbs$/, '');
@@ -232,7 +319,7 @@ export class TemplateLoader {
 
     private async loadPartialFiles(dir: string, partials: Map<string, string>): Promise<void> {
         const entries = await fs.readdir(dir, { withFileTypes: true });
-        
+
         for (const entry of entries) {
             if (entry.isFile() && entry.name.endsWith('.hbs')) {
                 const partialName = entry.name.replace(/\.hbs$/, '');
@@ -281,7 +368,7 @@ export class TemplateLoader {
             // Add or override templates
             for (const [name, content] of customTemplates.templates) {
                 const templateConfig = customTemplates.config.templates?.[name] || {};
-                
+
                 if (templateConfig.override !== false) {
                     const compiled = this.handlebars.compile(content);
                     compiledTemplates.set(name, {
@@ -319,7 +406,7 @@ export class TemplateLoader {
 
     async validateTemplate(templatePath: string): Promise<{ valid: boolean; errors: string[] }> {
         const errors: string[] = [];
-        
+
         try {
             // Check if config exists
             const configPath = path.join(templatePath, 'config.json');

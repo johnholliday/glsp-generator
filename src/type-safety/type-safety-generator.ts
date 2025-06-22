@@ -29,7 +29,7 @@ export class TypeSafetyGenerator {
     private guardGenerator: GuardGenerator;
     private zodGenerator: ZodGenerator;
     private utilityGenerator: UtilityGenerator;
-    
+
     constructor() {
         this.declarationGenerator = new DeclarationGenerator();
         this.validationGenerator = new ValidationGenerator();
@@ -37,7 +37,7 @@ export class TypeSafetyGenerator {
         this.zodGenerator = new ZodGenerator();
         this.utilityGenerator = new UtilityGenerator();
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         config: GLSPConfig,
@@ -47,9 +47,9 @@ export class TypeSafetyGenerator {
         const opts = this.normalizeOptions(options);
         const filesGenerated: string[] = [];
         const errors: string[] = [];
-        
+
         console.log(chalk.blue('🔒 Generating type safety features...'));
-        
+
         try {
             // Generate TypeScript declarations
             if (opts.declarations !== false) {
@@ -58,7 +58,7 @@ export class TypeSafetyGenerator {
                 await this.declarationGenerator.generate(grammar, outputDir, declOptions);
                 filesGenerated.push(`${grammar.projectName}-types.d.ts`);
             }
-            
+
             // Generate validation functions
             if (opts.validation !== false) {
                 console.log(chalk.gray('   • Generating validation functions...'));
@@ -66,7 +66,7 @@ export class TypeSafetyGenerator {
                 await this.validationGenerator.generate(grammar, outputDir, valOptions);
                 filesGenerated.push(`${grammar.projectName}-validators.ts`);
             }
-            
+
             // Generate type guards
             if (opts.guards !== false) {
                 console.log(chalk.gray('   • Generating type guards...'));
@@ -74,7 +74,7 @@ export class TypeSafetyGenerator {
                 await this.guardGenerator.generate(grammar, outputDir, guardOptions);
                 filesGenerated.push(`${grammar.projectName}-guards.ts`);
             }
-            
+
             // Generate Zod schemas
             if (opts.zodSchemas !== false) {
                 console.log(chalk.gray('   • Generating Zod schemas...'));
@@ -82,7 +82,7 @@ export class TypeSafetyGenerator {
                 await this.zodGenerator.generate(grammar, outputDir, zodOptions);
                 filesGenerated.push(`${grammar.projectName}-schemas.ts`);
             }
-            
+
             // Generate utility functions
             if (opts.utilities !== false) {
                 console.log(chalk.gray('   • Generating utility functions...'));
@@ -90,28 +90,28 @@ export class TypeSafetyGenerator {
                 await this.utilityGenerator.generate(grammar, outputDir, utilOptions);
                 filesGenerated.push(`${grammar.projectName}-utilities.ts`);
             }
-            
+
             // Generate type safety documentation
             await this.generateDocumentation(grammar, outputDir);
             filesGenerated.push('type-safety.md');
-            
+
             // Generate test examples
             await this.generateTestExamples(grammar, outputDir);
             filesGenerated.push('type-safety.test.ts');
-            
+
             console.log(chalk.green('✅ Type safety features generated successfully!'));
             console.log(chalk.gray(`   Generated ${filesGenerated.length} files`));
-            
+
             return {
                 success: true,
                 filesGenerated
             };
-            
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             console.error(chalk.red(`❌ Error generating type safety features: ${errorMessage}`));
             errors.push(errorMessage);
-            
+
             return {
                 success: false,
                 filesGenerated,
@@ -119,7 +119,7 @@ export class TypeSafetyGenerator {
             };
         }
     }
-    
+
     private normalizeOptions(options?: TypeSafetyOptions): Required<TypeSafetyOptions> {
         return {
             declarations: options?.declarations ?? true,
@@ -129,7 +129,7 @@ export class TypeSafetyGenerator {
             utilities: options?.utilities ?? true
         };
     }
-    
+
     private async generateDocumentation(grammar: ParsedGrammar, outputDir: string): Promise<void> {
         const docsContent = `# Type Safety Documentation for ${grammar.projectName}
 
@@ -303,19 +303,19 @@ If you're migrating from untyped code:
    }
    \`\`\`
 `;
-        
+
         const docsDir = path.join(outputDir, 'docs');
         await fs.ensureDir(docsDir);
         await fs.writeFile(path.join(docsDir, 'type-safety.md'), docsContent);
     }
-    
+
     private async generateTestExamples(grammar: ParsedGrammar, outputDir: string): Promise<void> {
         const testContent = `/**
  * Type safety test examples for ${grammar.projectName}
  * @generated
  */
 
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 import { ${grammar.interfaces.map(i => i.name).join(', ')} } from '../src/types/${grammar.projectName}-types';
 import { validators } from '../src/types/${grammar.projectName}-validators';
 import { ${grammar.interfaces.map(i => `is${i.name}`).join(', ')} } from '../src/types/${grammar.projectName}-guards';
@@ -369,7 +369,7 @@ ${grammar.interfaces.map(iface => `
 `).join('\n')}
 });
 `;
-        
+
         const testsDir = path.join(outputDir, '__tests__');
         await fs.ensureDir(testsDir);
         await fs.writeFile(path.join(testsDir, 'type-safety.test.ts'), testContent);

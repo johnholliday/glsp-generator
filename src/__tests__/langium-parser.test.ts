@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import path from 'path';
 import { MockGrammarParser } from './mocks/mock-parser.mock.js';
 import { IGrammarParser } from '../types/parser-interface.js';

@@ -9,6 +9,7 @@ import { TemplateResolver } from './template-resolver.js';
 import { TemplatePackageManager } from './package-manager.js';
 import { TemplateInheritance } from './inheritance.js';
 import { TemplateOptions, TemplateSet } from './types.js';
+import Handlebars from 'handlebars';
 
 /**
  * Main template system class that orchestrates all template functionality
@@ -22,7 +23,7 @@ export class TemplateSystem {
     constructor() {
         this.loader = new TemplateLoader();
         this.packageManager = new TemplatePackageManager();
-        this.inheritance = new TemplateInheritance(require('handlebars'));
+        this.inheritance = new TemplateInheritance(Handlebars);
     }
 
     /**
@@ -30,7 +31,7 @@ export class TemplateSystem {
      */
     async initialize(options: TemplateOptions = {}): Promise<TemplateResolver> {
         const loadResult = await this.loader.loadTemplates(options);
-        
+
         if (!loadResult.success || !loadResult.templateSet) {
             throw new Error(`Failed to load templates: ${loadResult.errors?.join(', ')}`);
         }

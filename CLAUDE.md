@@ -93,7 +93,7 @@ glsp-generator/
 │   └── prompt-*.md          # Individual enhancement prompts
 ├── package.json
 ├── tsconfig.json
-├── jest.config.js
+├── vitest.config.ts          # Vitest configuration
 ├── CLAUDE.md                 # This file
 ├── TESTPLAN.md              # Test documentation (maintained by Claude)
 └── README.md
@@ -128,11 +128,11 @@ Remove-Item -Recurse -Force dist; yarn build
 # Or use cross-platform rimraf (if installed)
 yarn rimraf dist && yarn build
 
-# Run tests (with automatic test creation requirement)
+# Run tests with Vitest
 yarn test
 
 # Run tests with coverage (aim for 100%)
-yarn test --coverage
+yarn test:coverage
 
 # Run tests in watch mode
 yarn test:watch
@@ -142,6 +142,9 @@ yarn test src\utils\langium-ast-parser.test.ts
 
 # Or with forward slashes (also works)
 yarn test src/utils/langium-ast-parser.test.ts
+
+# Run tests with UI (opens browser)
+yarn test:ui
 
 # Update TESTPLAN.md after test changes
 # (Claude must do this automatically)
@@ -378,7 +381,7 @@ try {
 ## Testing Requirements
 
 ### Automatic Test Creation
-Claude Code MUST create Jest tests for every new or modified functionality:
+Claude Code MUST create Vitest tests for every new or modified functionality:
 - **File naming**: For every `src/<name>.ts` file, create `src/<name>.test.ts`
 - **Coverage requirement**: Aim for 100% code coverage
 - **Test categories**:
@@ -390,7 +393,7 @@ Claude Code MUST create Jest tests for every new or modified functionality:
 ### Test Structure Template
 ```typescript
 // src/utils/example.test.ts
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { exampleFunction } from './example';
 
 describe('exampleFunction', () => {
@@ -400,6 +403,7 @@ describe('exampleFunction', () => {
 
   afterEach(() => {
     // Cleanup
+    vi.restoreAllMocks();
   });
 
   it('should handle normal case', () => {
@@ -412,6 +416,12 @@ describe('exampleFunction', () => {
 
   it('should handle edge cases', () => {
     expect(exampleFunction('')).toBe('');
+  });
+
+  // Mocking example
+  it('should mock dependencies', () => {
+    const mockFn = vi.fn().mockReturnValue('mocked');
+    expect(mockFn()).toBe('mocked');
   });
 });
 ```
@@ -436,8 +446,9 @@ Last updated: YYYY-MM-DD
 
 ## Quick Commands (PowerShell)
 - Run all tests: `yarn test`
-- Run with coverage: `yarn test --coverage`
+- Run with coverage: `yarn test:coverage`
 - Watch mode: `yarn test:watch`
+- Run with UI: `yarn test:ui`
 - Specific file: `yarn test src\utils\langium-ast-parser.test.ts`
 
 ## Test Suites
@@ -489,7 +500,7 @@ export function toKebabCase(str: string): string {
 
 // Claude MUST immediately create:
 // src\utils\string-helpers.test.ts
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { toKebabCase } from './string-helpers';  // Use forward slash in imports
 
 describe('toKebabCase', () => {
@@ -526,7 +537,7 @@ describe('toKebabCase', () => {
 - Snapshot tests for template output
 - Test file naming: `*.test.ts` or `*.spec.ts`
 - Mock file system operations in tests
-- Use Jest's built-in mocking capabilities
+- Use Vitest's built-in mocking capabilities (vi.mock, vi.fn, vi.spyOn)
 
 ## Grammar Support
 
@@ -674,7 +685,10 @@ Ensure all npm/yarn scripts work in PowerShell:
   "scripts": {
     "clean": "rimraf dist",  // Cross-platform
     "build": "tsc && node scripts/copy-templates.js",  // Not bash-specific
-    "test": "jest --config jest.config.js",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
     "dev": "tsc --watch",
     "copy-templates": "node scripts/copy-templates.js",  // Not cp -r
     "prebuild": "yarn clean",
@@ -771,7 +785,7 @@ glsp-generator\
 
 ### Must Do
 - ✅ Use Yarn exclusively (never npm)
-- ✅ Create Jest tests for every new function
+- ✅ Create Vitest tests for every new function
 - ✅ Update TESTPLAN.md with every test change
 - ✅ Place utility scripts in `scripts/`
 - ✅ Place documentation in `history/`

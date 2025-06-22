@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs-extra';
 import os from 'os';
@@ -60,13 +60,13 @@ describe.skip('GLSP CLI Integration Tests', () => {
   });
   
   test('should display version', () => {
-    const { execSync } = jest.requireActual('child_process') as typeof import('child_process');
+    const { execSync } = vi.importActual('child_process') as typeof import('child_process');
     const output = execSync(`node ${cliPath} --version`, { encoding: 'utf-8' });
     expect(output).toMatch(/\d+\.\d+\.\d+/);
   });
   
   test('should display help', () => {
-    const { execSync } = jest.requireActual('child_process') as typeof import('child_process');
+    const { execSync } = vi.importActual('child_process') as typeof import('child_process');
     const output = execSync(`node ${cliPath} --help`, { encoding: 'utf-8' });
     expect(output).toContain('glsp <command> [options]');
   });

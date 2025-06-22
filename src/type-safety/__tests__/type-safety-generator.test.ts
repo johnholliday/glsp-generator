@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { TypeSafetyGenerator } from '../type-safety-generator.js';
 import { ParsedGrammar } from '../../types/grammar.js';
-import { GLSPConfig } from '../../types/config.js';
+import { GLSPConfig } from '../../config/types.js';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -13,7 +13,7 @@ describe('TypeSafetyGenerator', () => {
 
   beforeEach(async () => {
     generator = new TypeSafetyGenerator();
-    
+
     testGrammar = {
       projectName: 'test-project',
       interfaces: [
@@ -41,13 +41,64 @@ describe('TypeSafetyGenerator', () => {
     testConfig = {
       extension: {
         name: 'test-extension',
-        version: '1.0.0'
+        displayName: 'Test Extension',
+        version: '1.0.0',
+        publisher: 'test-publisher',
+        description: 'Test description',
+        license: 'MIT'
       },
-      server: {},
-      client: {},
+      dependencies: {
+        '@eclipse-glsp/server': '^2.0.0',
+        '@eclipse-glsp/client': '^2.0.0',
+        '@eclipse-glsp/theia-integration': '^2.0.0',
+        '@theia/core': '^1.35.0',
+        customDeps: {}
+      },
+      diagram: {
+        type: 'node-edge',
+        features: {
+          compartments: false,
+          ports: false,
+          routing: 'polyline',
+          grid: true,
+          snapToGrid: true,
+          autoLayout: false,
+          animation: true
+        }
+      },
+      styling: {
+        theme: 'light',
+        defaultColors: {
+          node: '#4A90E2',
+          edge: '#333333',
+          selected: '#FF6B6B',
+          hover: '#FFA500',
+          error: '#DC143C'
+        },
+        fonts: {
+          default: 'Arial, sans-serif',
+          monospace: 'Consolas, Monaco, monospace'
+        },
+        nodeDefaults: {
+          width: 100,
+          height: 60,
+          cornerRadius: 5
+        }
+      },
+      generation: {
+        outputStructure: 'standard',
+        includeExamples: true,
+        generateTests: true,
+        generateDocs: true,
+        templateOverrides: {}
+      },
       linter: {
-        enabled: true,
-        rules: {}
+        rules: {
+          'naming-conventions': 'error',
+          'no-duplicate-properties': 'error',
+          'no-circular-refs': 'warning',
+          'no-undefined-types': 'error'
+        }
       }
     };
 
@@ -56,11 +107,16 @@ describe('TypeSafetyGenerator', () => {
 
   afterEach(async () => {
     await fs.remove(outputDir);
+
+    // Clean up any event listeners to prevent memory leaks
+    if (process.listenerCount('unhandledRejection') > 10) {
+      process.removeAllListeners('unhandledRejection');
+    }
   });
 
   test('should generate all type safety features by default', async () => {
     const result = await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     expect(result.success).toBe(true);
     expect(result.filesGenerated).toContain('test-project-types.d.ts');
     expect(result.filesGenerated).toContain('test-project-validators.ts');
@@ -79,7 +135,7 @@ describe('TypeSafetyGenerator', () => {
       zodSchemas: false,
       utilities: false
     });
-    
+
     expect(result.success).toBe(true);
     expect(result.filesGenerated).toContain('test-project-types.d.ts');
     expect(result.filesGenerated).toContain('test-project-guards.ts');
@@ -90,10 +146,10 @@ describe('TypeSafetyGenerator', () => {
 
   test('should generate type safety documentation', async () => {
     const result = await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     const docsPath = path.join(outputDir, 'docs', 'type-safety.md');
     expect(await fs.pathExists(docsPath)).toBe(true);
-    
+
     const content = await fs.readFile(docsPath, 'utf-8');
     expect(content).toContain('# Type Safety Documentation for test-project');
     expect(content).toContain('## Generated Files');
@@ -104,12 +160,12 @@ describe('TypeSafetyGenerator', () => {
 
   test('should generate test examples', async () => {
     const result = await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     const testPath = path.join(outputDir, '__tests__', 'type-safety.test.ts');
     expect(await fs.pathExists(testPath)).toBe(true);
-    
+
     const content = await fs.readFile(testPath, 'utf-8');
-    expect(content).toContain("import { describe, test, expect } from '@jest/globals';");
+    expect(content).toContain("import { describe, test, expect } from 'vitest';");
     expect(content).toContain("describe('Type Safety Tests', () => {");
     expect(content).toContain("describe('Node', () => {");
     expect(content).toContain("test('should validate valid Node', () => {");
@@ -120,20 +176,20 @@ describe('TypeSafetyGenerator', () => {
     // Create a read-only directory to cause an error
     const readOnlyDir = path.join(outputDir, 'src', 'types');
     await fs.ensureDir(readOnlyDir);
-    
+
     // Make the directory read-only on non-Windows systems
     if (process.platform !== 'win32') {
       await fs.chmod(readOnlyDir, 0o444);
     }
-    
+
     const result = await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     // On Windows, this might still succeed, so we check both cases
     if (!result.success) {
       expect(result.errors).toBeDefined();
       expect(result.errors!.length).toBeGreaterThan(0);
     }
-    
+
     // Clean up permissions
     if (process.platform !== 'win32') {
       await fs.chmod(readOnlyDir, 0o755);
@@ -142,7 +198,7 @@ describe('TypeSafetyGenerator', () => {
 
   test('should create proper directory structure', async () => {
     await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     // Check directory structure
     expect(await fs.pathExists(path.join(outputDir, 'src', 'types'))).toBe(true);
     expect(await fs.pathExists(path.join(outputDir, 'docs'))).toBe(true);
@@ -153,19 +209,19 @@ describe('TypeSafetyGenerator', () => {
     // Test with empty object (should enable all)
     const result1 = await generator.generate(testGrammar, testConfig, outputDir, {});
     expect(result1.filesGenerated.length).toBeGreaterThan(5);
-    
+
     // Clear output
     await fs.remove(outputDir);
     await fs.ensureDir(outputDir);
-    
+
     // Test with undefined (should use defaults - all enabled)
     const result2 = await generator.generate(testGrammar, testConfig, outputDir);
     expect(result2.filesGenerated.length).toBeGreaterThan(5);
-    
+
     // Clear output
     await fs.remove(outputDir);
     await fs.ensureDir(outputDir);
-    
+
     // Test with partial options
     const result3 = await generator.generate(testGrammar, testConfig, outputDir, {
       declarations: false
@@ -175,10 +231,10 @@ describe('TypeSafetyGenerator', () => {
 
   test('should include usage examples in documentation', async () => {
     await generator.generate(testGrammar, testConfig, outputDir);
-    
+
     const docsPath = path.join(outputDir, 'docs', 'type-safety.md');
     const content = await fs.readFile(docsPath, 'utf-8');
-    
+
     // Check for specific examples
     expect(content).toContain('### Basic Type Checking');
     expect(content).toContain('isNode(data)');
@@ -198,12 +254,12 @@ describe('TypeSafetyGenerator', () => {
       interfaces: [],
       types: []
     };
-    
+
     const result = await generator.generate(emptyGrammar, testConfig, outputDir);
-    
+
     expect(result.success).toBe(true);
     expect(result.filesGenerated.length).toBeGreaterThan(0);
-    
+
     // Should still generate documentation
     const docsPath = path.join(outputDir, 'docs', 'type-safety.md');
     expect(await fs.pathExists(docsPath)).toBe(true);

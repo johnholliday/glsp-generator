@@ -60,7 +60,7 @@ import { GLSPGenerator, IGrammarParser } from 'glsp-generator';
 
 test('should generate with mock parser', async () => {
     // Create a mock parser
-    const mockParser: jest.Mocked<IGrammarParser> = {
+    const mockParser: vi.mocked<IGrammarParser> = {
         parseGrammarFile: jest.fn().mockResolvedValue({
             interfaces: [/* mock data */],
             types: [],

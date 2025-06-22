@@ -1,10 +1,6 @@
-// Mock for chalk to avoid ESM issues in tests
-// This mock properly supports chaining like chalk.red.bold('text')
-
+// Root level chalk mock for Vitest with proper ESM and chaining support
 const createChalkMock = () => {
-  const mockFunction = function (str) {
-    return String(str || "");
-  };
+  const mockFunction = (str) => String(str || "");
 
   // Use Proxy to handle any property access and return chainable mock
   return new Proxy(mockFunction, {
@@ -31,5 +27,5 @@ const createChalkMock = () => {
 
 const chalk = createChalkMock();
 
-// Export as default ESM module
+// Export as ESM default
 export default chalk;

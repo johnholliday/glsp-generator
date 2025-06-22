@@ -22,7 +22,7 @@ export class IntegrationTestGenerator {
     }
     
     private loadTemplates(): void {
-        this.serverTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+        this.serverTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { Container } from 'inversify';
 import { GLSPServerModule } from '@eclipse-glsp/server';
 import { {{projectName}}ServerModule } from '../../../src/server/{{projectName}}-server-module';
@@ -130,7 +130,7 @@ describe('{{projectName}} GLSP Server Integration', () => {
 });
 `);
 
-        this.handlerTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach } from '@jest/globals';
+        this.handlerTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach } from 'vitest';
 import { Container } from 'inversify';
 import { ActionDispatcher, ModelState } from '@eclipse-glsp/server';
 import { Create{{interfaceName}}Handler } from '../../../src/server/handlers/create-{{kebabCase interfaceName}}-handler';
@@ -149,14 +149,14 @@ describe('{{interfaceName}} Handler Integration', () => {
         modelState = {
             root: { type: 'graph', id: 'test', children: [] },
             index: {
-                add: jest.fn(),
-                remove: jest.fn(),
-                getById: jest.fn()
+                add: vi.fn(),
+                remove: vi.fn(),
+                getById: vi.fn()
             }
         } as any;
         
         actionDispatcher = {
-            dispatch: jest.fn()
+            dispatch: vi.fn()
         } as any;
         
         container.bind(ModelState).toConstantValue(modelState);
@@ -210,7 +210,7 @@ describe('{{interfaceName}} Handler Integration', () => {
     describe('Update {{interfaceName}}', () => {
         test('should handle update action', async () => {
             const existing = {{interfaceName}}Factory.create();
-            modelState.index.getById = jest.fn().mockReturnValue(existing);
+            modelState.index.getById = vi.fn().mockReturnValue(existing);
             
             const action = {
                 kind: 'update{{interfaceName}}',
@@ -228,7 +228,7 @@ describe('{{interfaceName}} Handler Integration', () => {
 
         test('should validate updates', async () => {
             const existing = {{interfaceName}}Factory.create();
-            modelState.index.getById = jest.fn().mockReturnValue(existing);
+            modelState.index.getById = vi.fn().mockReturnValue(existing);
             
             const action = {
                 kind: 'update{{interfaceName}}',
@@ -245,7 +245,7 @@ describe('{{interfaceName}} Handler Integration', () => {
     describe('Delete {{interfaceName}}', () => {
         test('should handle delete action', async () => {
             const toDelete = {{interfaceName}}Factory.create();
-            modelState.index.getById = jest.fn().mockReturnValue(toDelete);
+            modelState.index.getById = vi.fn().mockReturnValue(toDelete);
             
             const action = {
                 kind: 'delete{{interfaceName}}',
@@ -263,7 +263,7 @@ describe('{{interfaceName}} Handler Integration', () => {
             const element = {{interfaceName}}Factory.create();
             const connected = {{interfaceName}}Factory.create();
             
-            modelState.index.getById = jest.fn()
+            modelState.index.getById = vi.fn()
                 .mockReturnValueOnce(element)
                 .mockReturnValueOnce(connected);
             
@@ -281,7 +281,7 @@ describe('{{interfaceName}} Handler Integration', () => {
 });
 `);
 
-        this.clientTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+        this.clientTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { GLSPClient, ActionMessage } from '@eclipse-glsp/client';
 import { {{projectName}}CommandContribution } from '../../../src/browser/{{projectName}}-command-contribution';
 import { CommandRegistry } from '@theia/core';
@@ -294,16 +294,16 @@ describe('{{projectName}} Client Integration', () => {
     beforeEach(() => {
         // Mock GLSP client
         glspClient = {
-            sendActionMessage: jest.fn(),
-            onActionMessage: jest.fn(),
-            start: jest.fn(),
-            stop: jest.fn()
+            sendActionMessage: vi.fn(),
+            onActionMessage: vi.fn(),
+            start: vi.fn(),
+            stop: vi.fn()
         } as any;
 
         // Mock command registry
         commandRegistry = {
-            registerCommand: jest.fn(),
-            executeCommand: jest.fn()
+            registerCommand: vi.fn(),
+            executeCommand: vi.fn()
         } as any;
 
         commandContribution = new {{projectName}}CommandContribution();
@@ -349,7 +349,7 @@ describe('{{projectName}} Client Integration', () => {
 
 {{/each}}
         test('should handle command errors gracefully', async () => {
-            glspClient.sendActionMessage = jest.fn().mockRejectedValue(
+            glspClient.sendActionMessage = vi.fn().mockRejectedValue(
                 new Error('Network error')
             );
             
@@ -397,7 +397,7 @@ describe('{{projectName}} Client Integration', () => {
 });
 `);
 
-        this.communicationTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+        this.communicationTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { WebSocket } from 'ws';
 import { GLSPServer } from '../../../src/server/{{projectName}}-glsp-server';
 import { GLSPClient } from '../../../src/client/{{projectName}}-glsp-client';

@@ -22,7 +22,7 @@ export class UnitTestGenerator {
     }
     
     private loadTemplates(): void {
-        this.modelTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach } from '@jest/globals';
+        this.modelTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach } from 'vitest';
 import type { {{interfaceName}} } from '../../src/common/{{projectName}}-model';
 import { is{{interfaceName}}, validate{{interfaceName}} } from '../../src/common/{{projectName}}-validators';
 import { {{interfaceName}}Factory } from '../test-data/factories/{{kebabCase interfaceName}}-factory';
@@ -230,7 +230,7 @@ describe('{{interfaceName}} Model', () => {
 });
 `);
 
-        this.validationTestTemplate = Handlebars.compile(`import { describe, test, expect } from '@jest/globals';
+        this.validationTestTemplate = Handlebars.compile(`import { describe, test, expect } from 'vitest';
 import { validators } from '../../src/common/{{projectName}}-validators';
 import { {{interfaceNames}} } from '../../src/common/{{projectName}}-model';
 {{#each interfaces}}
@@ -291,7 +291,7 @@ describe('{{projectName}} Validators', () => {
 });
 `);
 
-        this.typeGuardTestTemplate = Handlebars.compile(`import { describe, test, expect } from '@jest/globals';
+        this.typeGuardTestTemplate = Handlebars.compile(`import { describe, test, expect } from 'vitest';
 import {
 {{#each interfaces}}
     is{{name}},

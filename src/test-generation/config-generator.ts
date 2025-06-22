@@ -4,26 +4,26 @@ import { ParsedGrammar } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface ConfigGeneratorOptions {
-    generateJestConfig?: boolean;
-    generatePlaywrightConfig?: boolean;
-    generateCoverageConfig?: boolean;
-    generateGithubActions?: boolean;
+  generateJestConfig?: boolean;
+  generatePlaywrightConfig?: boolean;
+  generateCoverageConfig?: boolean;
+  generateGithubActions?: boolean;
 }
 
 export class ConfigGenerator {
-    private jestConfigTemplate!: HandlebarsTemplateDelegate;
-    private playwrightConfigTemplate!: HandlebarsTemplateDelegate;
-    private coverageConfigTemplate!: HandlebarsTemplateDelegate;
-    private githubActionsTemplate!: HandlebarsTemplateDelegate;
-    private testSetupTemplate!: HandlebarsTemplateDelegate;
-    private testTsconfigTemplate!: HandlebarsTemplateDelegate;
-    
-    constructor() {
-        this.loadTemplates();
-    }
-    
-    private loadTemplates(): void {
-        this.jestConfigTemplate = Handlebars.compile(`import type { Config } from 'jest';
+  private jestConfigTemplate!: HandlebarsTemplateDelegate;
+  private playwrightConfigTemplate!: HandlebarsTemplateDelegate;
+  private coverageConfigTemplate!: HandlebarsTemplateDelegate;
+  private githubActionsTemplate!: HandlebarsTemplateDelegate;
+  private testSetupTemplate!: HandlebarsTemplateDelegate;
+  private testTsconfigTemplate!: HandlebarsTemplateDelegate;
+
+  constructor() {
+    this.loadTemplates();
+  }
+
+  private loadTemplates(): void {
+    this.jestConfigTemplate = Handlebars.compile(`import type { Config } from 'jest';
 
 const config: Config = {
     displayName: '{{projectName}} Tests',
@@ -96,7 +96,7 @@ const config: Config = {
 export default config;
 `);
 
-        this.playwrightConfigTemplate = Handlebars.compile(`import { defineConfig, devices } from '@playwright/test';
+    this.playwrightConfigTemplate = Handlebars.compile(`import { defineConfig, devices } from '@playwright/test';
 
 /**
  * See https://playwright.dev/docs/test-configuration
@@ -207,8 +207,8 @@ export default defineConfig({
 });
 `);
 
-        this.coverageConfigTemplate = Handlebars.compile(`{
-  "extends": "./jest.config.ts",
+    this.coverageConfigTemplate = Handlebars.compile(`{
+  "extends": "./vi.config.ts",
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "coverageReporters": [
@@ -265,7 +265,7 @@ export default defineConfig({
 }
 `);
 
-        this.githubActionsTemplate = Handlebars.compile(`name: CI/CD Pipeline
+    this.githubActionsTemplate = Handlebars.compile(`name: CI/CD Pipeline
 
 on:
   push:
@@ -432,7 +432,7 @@ jobs:
       run: npx semantic-release
 `);
 
-        this.testSetupTemplate = Handlebars.compile(`// Test setup file
+    this.testSetupTemplate = Handlebars.compile(`// Test setup file
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
 import 'reflect-metadata';
@@ -443,15 +443,15 @@ configure({ testIdAttribute: 'data-testid' });
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation(query => ({
         matches: false,
         media: query,
         onchange: null,
-        addListener: jest.fn(), // deprecated
-        removeListener: jest.fn(), // deprecated
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(), // deprecated
+        removeListener: vi.fn(), // deprecated
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
     })),
 });
 
@@ -494,12 +494,12 @@ global.sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Reset all mocks after each test
 afterEach(() => {
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
+    vi.clearAllMocks();
+    vi.clearAllMocks();
 });
 
 // Increase timeout for slow tests
-jest.setTimeout(30000);
+vi.setTimeout(30000);
 
 // Custom matchers
 expect.extend({
@@ -533,7 +533,7 @@ declare global {
 }
 `);
 
-        this.testTsconfigTemplate = Handlebars.compile(`{
+    this.testTsconfigTemplate = Handlebars.compile(`{
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": ["jest", "node", "@types/jest", "@testing-library/jest-dom"],
@@ -557,131 +557,131 @@ declare global {
   ]
 }
 `);
+  }
+
+  async generate(
+    grammar: ParsedGrammar,
+    outputDir: string,
+    options: ConfigGeneratorOptions = {}
+  ): Promise<string[]> {
+    const opts = {
+      generateJestConfig: true,
+      generatePlaywrightConfig: true,
+      generateCoverageConfig: true,
+      generateGithubActions: true,
+      ...options
+    };
+
+    const generatedFiles: string[] = [];
+    const coverage = 80; // Default coverage threshold
+
+    // Generate Jest config
+    if (opts.generateJestConfig) {
+      const jestPath = path.join(outputDir, 'vi.config.ts');
+      const content = this.jestConfigTemplate({
+        projectName: grammar.projectName,
+        coverage
+      });
+      await fs.writeFile(jestPath, content);
+      generatedFiles.push(jestPath);
+
+      // Generate test TypeScript config
+      const testTsconfigPath = path.join(outputDir, 'tsconfig.test.json');
+      const testTsconfigContent = this.testTsconfigTemplate({});
+      await fs.writeFile(testTsconfigPath, testTsconfigContent);
+      generatedFiles.push(testTsconfigPath);
     }
-    
-    async generate(
-        grammar: ParsedGrammar,
-        outputDir: string,
-        options: ConfigGeneratorOptions = {}
-    ): Promise<string[]> {
-        const opts = {
-            generateJestConfig: true,
-            generatePlaywrightConfig: true,
-            generateCoverageConfig: true,
-            generateGithubActions: true,
-            ...options
-        };
-        
-        const generatedFiles: string[] = [];
-        const coverage = 80; // Default coverage threshold
-        
-        // Generate Jest config
-        if (opts.generateJestConfig) {
-            const jestPath = path.join(outputDir, 'jest.config.ts');
-            const content = this.jestConfigTemplate({
-                projectName: grammar.projectName,
-                coverage
-            });
-            await fs.writeFile(jestPath, content);
-            generatedFiles.push(jestPath);
-            
-            // Generate test TypeScript config
-            const testTsconfigPath = path.join(outputDir, 'tsconfig.test.json');
-            const testTsconfigContent = this.testTsconfigTemplate({});
-            await fs.writeFile(testTsconfigPath, testTsconfigContent);
-            generatedFiles.push(testTsconfigPath);
-        }
-        
-        // Generate Playwright config
-        if (opts.generatePlaywrightConfig) {
-            const playwrightPath = path.join(outputDir, 'playwright.config.ts');
-            const content = this.playwrightConfigTemplate({
-                projectName: grammar.projectName
-            });
-            await fs.writeFile(playwrightPath, content);
-            generatedFiles.push(playwrightPath);
-        }
-        
-        // Generate coverage config
-        if (opts.generateCoverageConfig) {
-            const coveragePath = path.join(outputDir, 'jest.coverage.json');
-            const content = this.coverageConfigTemplate({
-                coverage
-            });
-            await fs.writeFile(coveragePath, content);
-            generatedFiles.push(coveragePath);
-        }
-        
-        // Generate GitHub Actions workflow
-        if (opts.generateGithubActions) {
-            const workflowDir = path.join(outputDir, '.github', 'workflows');
-            await fs.ensureDir(workflowDir);
-            
-            const workflowPath = path.join(workflowDir, 'ci.yml');
-            const content = this.githubActionsTemplate({
-                projectName: grammar.projectName
-            });
-            await fs.writeFile(workflowPath, content);
-            generatedFiles.push(workflowPath);
-        }
-        
-        // Generate test setup file
-        const setupDir = path.join(outputDir, 'src', 'test');
-        await fs.ensureDir(setupDir);
-        
-        const setupPath = path.join(setupDir, 'setup.ts');
-        const setupContent = this.testSetupTemplate({});
-        await fs.writeFile(setupPath, setupContent);
-        generatedFiles.push(setupPath);
-        
-        // Generate package.json scripts
-        await this.updatePackageJsonScripts(outputDir);
-        
-        return generatedFiles;
+
+    // Generate Playwright config
+    if (opts.generatePlaywrightConfig) {
+      const playwrightPath = path.join(outputDir, 'playwright.config.ts');
+      const content = this.playwrightConfigTemplate({
+        projectName: grammar.projectName
+      });
+      await fs.writeFile(playwrightPath, content);
+      generatedFiles.push(playwrightPath);
     }
-    
-    private async updatePackageJsonScripts(outputDir: string): Promise<void> {
-        const packageJsonPath = path.join(outputDir, 'package.json');
-        
-        if (await fs.pathExists(packageJsonPath)) {
-            const packageJson = await fs.readJson(packageJsonPath);
-            
-            // Add test scripts
-            packageJson.scripts = {
-                ...packageJson.scripts,
-                'test': 'jest',
-                'test:unit': 'jest --testPathPattern=unit',
-                'test:integration': 'jest --testPathPattern=integration',
-                'test:e2e': 'playwright test',
-                'test:e2e:ui': 'playwright test --ui',
-                'test:e2e:debug': 'playwright test --debug',
-                'test:watch': 'jest --watch',
-                'test:coverage': 'jest --config jest.coverage.json',
-                'test:ci': 'npm run test:coverage && npm run test:e2e',
-                'test:report': 'open coverage/lcov-report/index.html',
-                'test:clean': 'rm -rf coverage test-results playwright-report'
-            };
-            
-            // Add test dependencies
-            packageJson.devDependencies = {
-                ...packageJson.devDependencies,
-                '@jest/globals': '^29.7.0',
-                '@playwright/test': '^1.40.0',
-                '@testing-library/jest-dom': '^6.1.5',
-                '@testing-library/react': '^14.1.2',
-                '@types/jest': '^29.5.11',
-                '@faker-js/faker': '^8.3.1',
-                'identity-obj-proxy': '^3.0.0',
-                'jest': '^29.7.0',
-                'jest-junit': '^16.0.0',
-                'playwright': '^1.40.0',
-                'reflect-metadata': '^0.1.14',
-                'ts-jest': '^29.1.1',
-                'uuid': '^9.0.1',
-                '@types/uuid': '^9.0.7'
-            };
-            
-            await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
-        }
+
+    // Generate coverage config
+    if (opts.generateCoverageConfig) {
+      const coveragePath = path.join(outputDir, 'vi.coverage.json');
+      const content = this.coverageConfigTemplate({
+        coverage
+      });
+      await fs.writeFile(coveragePath, content);
+      generatedFiles.push(coveragePath);
     }
+
+    // Generate GitHub Actions workflow
+    if (opts.generateGithubActions) {
+      const workflowDir = path.join(outputDir, '.github', 'workflows');
+      await fs.ensureDir(workflowDir);
+
+      const workflowPath = path.join(workflowDir, 'ci.yml');
+      const content = this.githubActionsTemplate({
+        projectName: grammar.projectName
+      });
+      await fs.writeFile(workflowPath, content);
+      generatedFiles.push(workflowPath);
+    }
+
+    // Generate test setup file
+    const setupDir = path.join(outputDir, 'src', 'test');
+    await fs.ensureDir(setupDir);
+
+    const setupPath = path.join(setupDir, 'setup.ts');
+    const setupContent = this.testSetupTemplate({});
+    await fs.writeFile(setupPath, setupContent);
+    generatedFiles.push(setupPath);
+
+    // Generate package.json scripts
+    await this.updatePackageJsonScripts(outputDir);
+
+    return generatedFiles;
+  }
+
+  private async updatePackageJsonScripts(outputDir: string): Promise<void> {
+    const packageJsonPath = path.join(outputDir, 'package.json');
+
+    if (await fs.pathExists(packageJsonPath)) {
+      const packageJson = await fs.readJson(packageJsonPath);
+
+      // Add test scripts
+      packageJson.scripts = {
+        ...packageJson.scripts,
+        'test': 'jest',
+        'test:unit': 'jest --testPathPattern=unit',
+        'test:integration': 'jest --testPathPattern=integration',
+        'test:e2e': 'playwright test',
+        'test:e2e:ui': 'playwright test --ui',
+        'test:e2e:debug': 'playwright test --debug',
+        'test:watch': 'jest --watch',
+        'test:coverage': 'jest --config vi.coverage.json',
+        'test:ci': 'npm run test:coverage && npm run test:e2e',
+        'test:report': 'open coverage/lcov-report/index.html',
+        'test:clean': 'rm -rf coverage test-results playwright-report'
+      };
+
+      // Add test dependencies
+      packageJson.devDependencies = {
+        ...packageJson.devDependencies,
+        'vitest': '^29.7.0',
+        '@playwright/test': '^1.40.0',
+        '@testing-library/jest-dom': '^6.1.5',
+        '@testing-library/react': '^14.1.2',
+        '@types/jest': '^29.5.11',
+        '@faker-js/faker': '^8.3.1',
+        'identity-obj-proxy': '^3.0.0',
+        'jest': '^29.7.0',
+        'jest-junit': '^16.0.0',
+        'playwright': '^1.40.0',
+        'reflect-metadata': '^0.1.14',
+        'ts-jest': '^29.1.1',
+        'uuid': '^9.0.1',
+        '@types/uuid': '^9.0.7'
+      };
+
+      await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
+    }
+  }
 }

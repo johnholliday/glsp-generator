@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs-extra';
 import * as path from 'path';
 import { ParsedGrammar } from '../types/grammar.js';
 import { DocumentationRenderer } from './renderer.js';

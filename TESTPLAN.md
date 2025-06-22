@@ -1,15 +1,17 @@
 # Test Plan for GLSP Generator
 
 ## Overview
-Total test suites: 6
-Total test cases: 35+
+Total test suites: 20+
+Total test cases: 100+
 Current coverage: Target 100%
-Last updated: 2025-06-19
+Last updated: 2025-06-22
+Test Framework: Vitest (migrated from Jest)
 
 ## Quick Commands (PowerShell)
 - Run all tests: `yarn test`
-- Run with coverage: `yarn test --coverage`
+- Run with coverage: `yarn test:coverage`
 - Watch mode: `yarn test:watch`
+- UI mode: `yarn test:ui`
 - Specific file: `yarn test src\utils\langium-ast-parser.test.ts`
 - Validate templates: `yarn validate:templates`
 - Validate generated extension: `yarn validate:generated <path>`
@@ -174,7 +176,7 @@ Last updated: 2025-06-19
    - Test count
    - Key scenarios
    - Run command
-4. Run coverage to ensure no regression: `yarn test --coverage`
+4. Run coverage to ensure no regression: `yarn test:coverage`
 
 ## Troubleshooting (PowerShell)
 
@@ -185,10 +187,11 @@ Last updated: 2025-06-19
 - **Husky not working**: Run `yarn install` to set up git hooks
 - **CI failures**: Check Node version compatibility
 
-### Mock File System Issues
-- Jest is configured to handle fs-extra mocking
-- Check `jest.config.js` for proper setup
-- Use `jest.mock('fs-extra')` in tests when needed
+### Mock File System Issues (Vitest)
+- Vitest is configured to handle fs-extra mocking
+- Check `vitest.config.ts` for proper setup
+- Use `vi.mock('fs-extra')` in tests when needed
+- Mock modules are in `src/__mocks__/` directory
 
 ### Windows-Specific Issues
 - Use forward slashes in import statements
@@ -196,9 +199,21 @@ Last updated: 2025-06-19
 - Ensure line endings are consistent (CRLF)
 
 ### Async Test Timeouts
-- Default timeout is 5000ms
-- Increase for slow operations: `jest.setTimeout(10000)`
-- Use in specific tests that need more time
+- Default timeout is 20000ms (20 seconds)
+- Increase for slow operations in specific tests:
+  ```typescript
+  test('slow operation', async () => {
+    // test code
+  }, 30000); // 30 second timeout
+  ```
+- Or globally in vitest.config.ts
+
+### Vitest-Specific Tips
+- Use `vi.fn()` instead of `jest.fn()`
+- Use `vi.mock()` instead of `jest.mock()`
+- Use `vi.spyOn()` instead of `jest.spyOn()`
+- Run UI mode for debugging: `yarn test:ui`
+- Check coverage report: `yarn test:coverage`
 
 ## Running Validation in Development
 

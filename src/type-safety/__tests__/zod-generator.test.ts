@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { ZodGenerator } from '../zod-generator.js';
 import { ParsedGrammar } from '../../types/grammar.js';
 import fs from 'fs-extra';

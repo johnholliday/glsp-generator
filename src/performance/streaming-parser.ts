@@ -1,5 +1,5 @@
 import { Transform, Readable } from 'stream';
-import { createReadStream } from 'fs';
+import fs from 'fs-extra';
 import { PerformanceMonitor } from './monitor.js';
 import { PerformanceConfig, StreamingOptions } from './types';
 import { GrammarAST, ParsedGrammar } from '../types/grammar';
@@ -33,7 +33,7 @@ export class StreamingGrammarParser {
 
         try {
             const chunks: string[] = [];
-            const stream = createReadStream(filePath, {
+            const stream = fs.createReadStream(filePath, {
                 encoding: 'utf8',
                 highWaterMark: this.options.chunkSize
             });

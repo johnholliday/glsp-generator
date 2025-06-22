@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { DocumentationGenerator } from '../documentation-generator.js';
 import { ParsedGrammar } from '../../types/grammar.js';
 import { GLSPConfig } from '../../config/types.js';

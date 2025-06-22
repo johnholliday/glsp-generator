@@ -1,5 +1,5 @@
 import path from 'path';
-import { existsSync } from 'fs';
+import fs from 'fs-extra';
 
 /**
  * Get the project root directory by looking for package.json
@@ -9,7 +9,7 @@ export function getProjectRoot(): string {
     
     // Search up the directory tree for package.json
     while (currentDir !== path.dirname(currentDir)) {
-        if (existsSync(path.join(currentDir, 'package.json'))) {
+        if (fs.existsSync(path.join(currentDir, 'package.json'))) {
             return currentDir;
         }
         currentDir = path.dirname(currentDir);
@@ -25,7 +25,7 @@ export function getProjectRoot(): string {
 export function getSourceDir(): string {
     const projectRoot = getProjectRoot();
     // Check if we're running from compiled dist or source
-    if (existsSync(path.join(projectRoot, 'dist', 'generator.js'))) {
+    if (fs.existsSync(path.join(projectRoot, 'dist', 'generator.js'))) {
         return path.join(projectRoot, 'dist');
     }
     return path.join(projectRoot, 'src');

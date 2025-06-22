@@ -1,4 +1,4 @@
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
 import { ConfigLoader } from './config-loader.js';
 import { DEFAULT_CONFIG } from './default-config.js';

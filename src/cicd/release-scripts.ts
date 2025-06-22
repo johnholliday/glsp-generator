@@ -19,11 +19,11 @@ export class ReleaseScriptsGenerator {
     private publishScriptTemplate!: HandlebarsTemplateDelegate;
     private releaseScriptTemplate!: HandlebarsTemplateDelegate;
     private semanticReleaseConfigTemplate!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplates();
     }
-    
+
     private loadTemplates(): void {
         this.versionScriptTemplate = Handlebars.compile(`#!/usr/bin/env node
 /**
@@ -453,7 +453,7 @@ release();
 }
 `);
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         config: GLSPConfig,
@@ -469,13 +469,13 @@ release();
             semanticRelease: false,
             ...options
         };
-        
+
         const generatedFiles: string[] = [];
-        
+
         // Create scripts directory
         const scriptsDir = path.join(outputDir, 'scripts');
         await fs.ensureDir(scriptsDir);
-        
+
         // Generate version script
         if (opts.generateVersionScripts) {
             const versionPath = path.join(scriptsDir, 'version.js');
@@ -486,7 +486,7 @@ release();
             await fs.chmod(versionPath, '755');
             generatedFiles.push(versionPath);
         }
-        
+
         // Generate changelog script
         if (opts.generateChangelogScripts) {
             const changelogPath = path.join(scriptsDir, 'changelog.js');
@@ -497,7 +497,7 @@ release();
             await fs.chmod(changelogPath, '755');
             generatedFiles.push(changelogPath);
         }
-        
+
         // Generate publish script
         if (opts.generatePublishScripts) {
             const publishPath = path.join(scriptsDir, 'publish.js');
@@ -508,7 +508,7 @@ release();
             await fs.chmod(publishPath, '755');
             generatedFiles.push(publishPath);
         }
-        
+
         // Generate release script
         if (opts.generateReleaseScript) {
             const releasePath = path.join(scriptsDir, 'release.js');
@@ -519,7 +519,7 @@ release();
             await fs.chmod(releasePath, '755');
             generatedFiles.push(releasePath);
         }
-        
+
         // Generate semantic-release config if requested
         if (opts.semanticRelease) {
             const configPath = path.join(outputDir, '.releaserc.json');
@@ -527,19 +527,19 @@ release();
             await fs.writeFile(configPath, content);
             generatedFiles.push(configPath);
         }
-        
+
         // Update package.json scripts
         await this.updatePackageJsonScripts(outputDir, opts);
-        
+
         return generatedFiles;
     }
-    
+
     private async updatePackageJsonScripts(outputDir: string, options: ReleaseScriptsOptions): Promise<void> {
         const packageJsonPath = path.join(outputDir, 'package.json');
-        
+
         if (await fs.pathExists(packageJsonPath)) {
             const packageJson = await fs.readJson(packageJsonPath);
-            
+
             // Add release scripts
             packageJson.scripts = {
                 ...packageJson.scripts,
@@ -556,17 +556,17 @@ release();
                 'publish:ovsx': 'node scripts/publish.js --skip-npm',
                 'publish:all': 'node scripts/publish.js'
             };
-            
+
             if (options.semanticRelease) {
                 packageJson.scripts['semantic-release'] = 'semantic-release';
             }
-            
+
             // Add dev dependencies for changelog generation
             packageJson.devDependencies = {
                 ...packageJson.devDependencies,
                 'semver': '^7.5.4'
             };
-            
+
             if (options.semanticRelease) {
                 packageJson.devDependencies = {
                     ...packageJson.devDependencies,
@@ -575,7 +575,7 @@ release();
                     '@semantic-release/git': '^10.0.1'
                 };
             }
-            
+
             await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
         }
     }
