@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { GLSPConfig, ConfigOverrides } from './types.js';
 import { DEFAULT_CONFIG } from './default-config.js';
 import { getConfigSchemaPath } from '../utils/paths.js';
+import { ConfigInterpolator, InterpolationContext } from './config-interpolator.js';
 
 export class ConfigLoader {
     private ajv: Ajv;
@@ -20,7 +21,7 @@ export class ConfigLoader {
     /**
      * Load configuration starting from a directory and searching up
      */
-    async loadConfig(startPath?: string, configPath?: string): Promise<GLSPConfig> {
+    async loadConfig(startPath?: string, configPath?: string, interpolationContext?: InterpolationContext): Promise<GLSPConfig> {
         let config: Partial<GLSPConfig> = {};
 
         // If explicit config path provided, use it
@@ -35,7 +36,12 @@ export class ConfigLoader {
         }
 
         // Merge with defaults
-        const mergedConfig = this.mergeWithDefaults(config);
+        let mergedConfig = this.mergeWithDefaults(config);
+
+        // Apply interpolation if context is provided
+        if (interpolationContext) {
+            mergedConfig = ConfigInterpolator.interpolateConfig(mergedConfig, interpolationContext);
+        }
 
         // Validate final config
         this.validateConfig(mergedConfig);

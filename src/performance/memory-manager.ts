@@ -28,6 +28,7 @@ export class MemoryManager extends EventEmitter {
     private lastGC = 0;
     private monitoringInterval?: NodeJS.Timeout;
     private isMonitoring = false;
+    private eventHandlers?: { warningHandler: (warning: Error) => void; exceptionHandler: (error: Error) => void; };
 
     constructor(
         private config: PerformanceConfig = {},
@@ -73,6 +74,14 @@ export class MemoryManager extends EventEmitter {
             this.monitoringInterval = undefined;
         }
         this.isMonitoring = false;
+        
+        // Remove event handlers to prevent keeping process alive
+        if (this.eventHandlers) {
+            process.removeListener('warning', this.eventHandlers.warningHandler);
+            process.removeListener('uncaughtException', this.eventHandlers.exceptionHandler);
+            this.eventHandlers = undefined;
+        }
+        
         console.log('🧠 Memory monitoring stopped');
     }
 
@@ -192,19 +201,24 @@ export class MemoryManager extends EventEmitter {
      */
     private setupMemoryMonitoring(): void {
         // Handle process warnings
-        process.on('warning', (warning) => {
+        const warningHandler = (warning: Error) => {
             if (warning.name === 'MaxListenersExceededWarning') {
                 console.warn('⚠️  Memory: Max listeners exceeded warning');
             }
-        });
+        };
+        process.on('warning', warningHandler);
 
         // Handle uncaught exceptions that might indicate memory issues
-        process.on('uncaughtException', (error) => {
+        const exceptionHandler = (error: Error) => {
             if (error.message.includes('out of memory') || error.message.includes('heap')) {
                 console.error('💥 Memory: Out of memory error detected');
                 this.emergencyCleanup();
             }
-        });
+        };
+        process.on('uncaughtException', exceptionHandler);
+
+        // Store handlers for cleanup
+        this.eventHandlers = { warningHandler, exceptionHandler };
     }
 
     /**

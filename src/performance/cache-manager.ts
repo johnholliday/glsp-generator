@@ -36,6 +36,7 @@ export interface CacheManager {
 
     // Persistence
     save(): Promise<void>;
+    saveSync(): void;
     load(): Promise<void>;
 
     // Statistics
@@ -333,6 +334,30 @@ export class AdvancedCacheManager implements CacheManager {
             }
         } finally {
             endTimer();
+        }
+    }
+
+    /**
+     * Save cache to disk synchronously (for exit handlers)
+     */
+    saveSync(): void {
+        if (!this.config.persistToDisk) return;
+
+        try {
+            const cacheData = {
+                grammar: Array.from(this.grammarCache.entries()),
+                template: Array.from(this.templateCache.entries()),
+                dependency: Array.from(this.dependencyCache.entries()),
+                stats: this.stats,
+                timestamp: Date.now()
+            };
+
+            const serialized = JSON.stringify(cacheData);
+
+            // Skip compression in sync mode for simplicity
+            fs.writeFileSync(path.join(this.cacheDir, 'cache.json'), serialized);
+        } catch (error) {
+            // Ignore errors during sync save (usually called during exit)
         }
     }
 

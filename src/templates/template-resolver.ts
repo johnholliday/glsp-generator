@@ -19,14 +19,14 @@ export interface GenerationItem {
 }
 
 export class TemplateResolver {
-    constructor(private templateSet: TemplateSet) {}
+    constructor(private templateSet: TemplateSet) { }
 
     /**
      * Resolve which templates should be generated and their output paths
      */
     resolveTemplates(context: TemplateContext): GenerationItem[] {
         const items: GenerationItem[] = [];
-        
+
         for (const [templateName, compiledTemplate] of this.templateSet.templates) {
             // Check if template should be generated based on conditions
             if (!this.shouldGenerateTemplate(compiledTemplate, context)) {
@@ -35,7 +35,7 @@ export class TemplateResolver {
 
             // Calculate output path
             const outputPath = this.resolveOutputPath(templateName, compiledTemplate.config, context);
-            
+
             items.push({
                 templateName,
                 outputPath,
@@ -66,13 +66,13 @@ export class TemplateResolver {
      */
     getTemplatesByCategory(category: string): Map<string, CompiledTemplate> {
         const filtered = new Map<string, CompiledTemplate>();
-        
+
         for (const [name, template] of this.templateSet.templates) {
             if (name.startsWith(category + '/') || name.startsWith(category + '-')) {
                 filtered.set(name, template);
             }
         }
-        
+
         return filtered;
     }
 
@@ -81,7 +81,7 @@ export class TemplateResolver {
      */
     private shouldGenerateTemplate(template: CompiledTemplate, context: TemplateContext): boolean {
         const config = template.config;
-        
+
         // Check basic conditions
         if (config.condition) {
             try {
@@ -92,7 +92,7 @@ export class TemplateResolver {
                 return true; // Default to generating if condition fails
             }
         }
-        
+
         return true;
     }
 
@@ -105,21 +105,21 @@ export class TemplateResolver {
         if (condition === 'hasInterfaces') {
             return context.grammar.interfaces.length > 0;
         }
-        
+
         if (condition === 'hasTypes') {
             return context.grammar.types.length > 0;
         }
-        
+
         if (condition.startsWith('hasFeature:')) {
             const feature = condition.split(':')[1];
             return this.templateSet.config.features?.includes(feature) || false;
         }
-        
+
         if (condition.startsWith('config.')) {
             const configPath = condition.substring(7);
             return this.getNestedProperty(context.config, configPath);
         }
-        
+
         // Default to true for unknown conditions
         return true;
     }
@@ -128,8 +128,8 @@ export class TemplateResolver {
      * Resolve the output path for a template
      */
     private resolveOutputPath(
-        templateName: string, 
-        config: TemplateDefinition, 
+        templateName: string,
+        config: TemplateDefinition,
         context: TemplateContext
     ): string {
         // Use explicit targetDir if specified
@@ -147,7 +147,7 @@ export class TemplateResolver {
      */
     private getDefaultOutputPath(templateName: string, context: TemplateContext): string {
         const { projectName } = context;
-        
+
         // Map template names to output paths
         const pathMappings: Record<string, string> = {
             'model': `src/common/${projectName}-model.ts`,
@@ -156,7 +156,10 @@ export class TemplateResolver {
             'server-model': `src/server/model/${projectName}-server-model.ts`,
             'create-node-handler': `src/server/handlers/create-${projectName}-node-handler.ts`,
             'package-json': 'package.json',
-            'tsconfig': 'tsconfig.json'
+            'tsconfig': 'tsconfig.json',
+            '.yarnrc': '.yarnrc',
+            'yarn.lock': 'yarn.lock',
+            'README.md': 'README.md'
         };
 
         // Check direct mapping first
@@ -168,7 +171,7 @@ export class TemplateResolver {
         if (templateName.includes('/')) {
             const parts = templateName.split('/');
             const fileName = this.resolveFileName(parts[parts.length - 1], context);
-            
+
             // Build path based on structure
             if (parts[0] === 'browser') {
                 return `src/browser/${parts.slice(1).join('/')}/${fileName}`;
@@ -189,20 +192,20 @@ export class TemplateResolver {
      */
     private resolveFileName(templateName: string, context: TemplateContext): string {
         const { projectName } = context;
-        
+
         // If template name contains placeholders, replace them
         let fileName = templateName;
-        
+
         // Replace common patterns
         fileName = fileName.replace(/\{projectName\}/g, projectName);
         fileName = fileName.replace(/\{kebab-case\}/g, this.toKebabCase(projectName));
         fileName = fileName.replace(/\{camelCase\}/g, this.toCamelCase(projectName));
-        
+
         // Add .ts extension if not present and not a special file
         if (!fileName.includes('.') && !['package-json', 'tsconfig', 'readme'].includes(templateName)) {
             fileName += '.ts';
         }
-        
+
         // Handle special cases
         if (templateName === 'package-json') {
             return 'package.json';
@@ -210,10 +213,13 @@ export class TemplateResolver {
         if (templateName === 'tsconfig') {
             return 'tsconfig.json';
         }
+        if (templateName === 'yarn.lock') {
+            return 'yarn.lock';
+        }
         if (templateName === 'readme') {
             return 'README.md';
         }
-        
+
         return fileName;
     }
 

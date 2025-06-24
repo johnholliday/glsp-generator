@@ -102,6 +102,22 @@ export class TemplateLoader {
             }
             return options.inverse(this);
         });
+
+        // Helper for formatting dates
+        this.handlebars.registerHelper('formatDate', (dateString: string) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        });
+
+        // Helper for converting to lowercase
+        this.handlebars.registerHelper('toLowerCase', (str: string) =>
+            str ? str.toLowerCase() : ''
+        );
     }
 
     async loadTemplates(options: TemplateOptions = {}): Promise<TemplateLoadResult> {

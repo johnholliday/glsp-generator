@@ -9,7 +9,9 @@ import ora from 'ora';
 import prompts from 'prompts';
 import { GLSPGenerator } from './generator.js';
 import { ConfigLoader } from './config/config-loader.js';
-import { getProjectRoot } from './utils/paths.js';
+import { ConfigInterpolator } from './config/config-interpolator.js';
+import { LangiumGrammarParser } from './utils/langium-parser.js';
+import { getProjectRoot, getUserProjectRoot } from './utils/paths.js';
 
 // Get version from package.json
 const packageJson = JSON.parse(await fs.readFile(path.join(getProjectRoot(), 'package.json'), 'utf-8'));
@@ -238,7 +240,7 @@ cli.command(
         if (grammarPath) {
           console.error(chalk.red(`❌ Grammar file not found: ${grammarPath}`));
         }
-        
+
         // Interactive mode: ask for grammar file
         const response = await prompts({
           type: 'text',
@@ -246,18 +248,31 @@ cli.command(
           message: 'Enter path to grammar file:',
           validate: async (value: string) => await fs.pathExists(value) || 'File not found'
         });
-        
+
         if (!response.grammar) {
           process.exit(1);
         }
-        
+
         grammarPath = response.grammar;
       }
 
-      // Load configuration
-      const configLoader = new ConfigLoader();
-      let config = await configLoader.loadConfig(process.cwd(), argv.config);
+      // Parse grammar first to get interpolation context
+      const parser = new LangiumGrammarParser();
+      let interpolationContext;
       
+      try {
+        const parsedGrammar = await parser.parseGrammarFile(grammarPath);
+        const grammarFileName = path.basename(grammarPath);
+        interpolationContext = ConfigInterpolator.createContext(parsedGrammar, grammarFileName);
+      } catch (error) {
+        // If parsing fails, we'll just load config without interpolation
+        console.warn(chalk.yellow('⚠️  Could not parse grammar for config interpolation'));
+      }
+
+      // Load configuration with interpolation
+      const configLoader = new ConfigLoader();
+      let config = await configLoader.loadConfig(getUserProjectRoot(), argv.config, interpolationContext);
+
       // Apply CLI overrides
       if (argv.set) {
         config = configLoader.applyOverrides(config, argv.set as Record<string, any>);
@@ -269,12 +284,12 @@ cli.command(
       if (!argv['no-validate']) {
         const spinner = ora('Validating grammar...').start();
         const isValid = await generator.validateGrammar(grammarPath);
-        
+
         if (!isValid) {
           spinner.fail('Grammar validation failed');
           process.exit(1);
         }
-        
+
         spinner.succeed('Grammar is valid');
       }
 
@@ -294,7 +309,7 @@ cli.command(
             message: `Output directory ${outputPath} is not empty. Overwrite?`,
             initial: false
           });
-          
+
           if (!response.overwrite) {
             console.log(chalk.yellow('Generation cancelled'));
             process.exit(0);
@@ -304,7 +319,7 @@ cli.command(
 
       // Generate extension
       const generateSpinner = ora('Generating GLSP extension...').start();
-      await generator.generateExtension(grammarPath, outputPath, {
+      const { extensionDir } = await generator.generateExtension(grammarPath, outputPath, {
         generateDocs: argv.docs,
         docsOptions: {
           theme: argv['docs-theme'] as 'light' | 'dark'
@@ -358,14 +373,22 @@ cli.command(
       generateSpinner.succeed('Generation complete');
 
       console.log(chalk.green.bold('\n🎉 Generation completed successfully!'));
-      console.log(chalk.cyan(`📁 Output: ${outputPath}`));
-      
+      console.log(chalk.cyan(`📁 Output: ${extensionDir}`));
+
       if (!argv.watch) {
         console.log(chalk.gray('\nNext steps:'));
-        console.log(chalk.gray(`  cd ${path.relative(process.cwd(), outputPath)}`));
+        const relativePath = path.relative(process.cwd(), extensionDir);
+        // Use backslashes on Windows for better compatibility
+        const displayPath = process.platform === 'win32' ? relativePath.replace(/\//g, '\\') : relativePath;
+        console.log(chalk.gray(`  cd ${displayPath}`));
         console.log(chalk.gray('  yarn install'));
         console.log(chalk.gray('  yarn build'));
         console.log(chalk.gray('\nOr run with --watch to auto-regenerate on changes'));
+        
+        // Force cleanup and exit
+        setTimeout(() => {
+          process.exit(0);
+        }, 100);
       }
 
       // Watch mode
@@ -382,7 +405,7 @@ cli.command(
         watcher.on('change', async () => {
           console.log(chalk.yellow(`\n📝 File changed: ${grammarPath}`));
           try {
-            await generator.generateExtension(grammarPath, outputPath, {
+            const { extensionDir: watchExtensionDir } = await generator.generateExtension(grammarPath, outputPath, {
               generateDocs: argv.docs,
               docsOptions: {
                 theme: argv['docs-theme'] as 'light' | 'dark'
@@ -504,20 +527,20 @@ cli.command(
       let config = undefined;
       if (argv.config) {
         const configLoader = new ConfigLoader();
-        config = await configLoader.loadConfig(process.cwd(), argv.config);
+        config = await configLoader.loadConfig(getUserProjectRoot(), argv.config);
       }
 
       const generator = new GLSPGenerator(config);
       const spinner = ora('Running validation...').start();
-      
+
       const options = {
         generateReport: !!argv.report,
         reportPath: argv.report,
         reportFormat: argv.format as 'markdown' | 'html'
       };
-      
+
       const isValid = await generator.validateGrammar(grammarFile, options);
-      
+
       if (isValid) {
         spinner.succeed('Grammar is valid');
         console.log(chalk.green('✅ No errors found'));
@@ -595,9 +618,9 @@ cli.command(
   async (argv) => {
     try {
       const { GrammarWatcher } = await import('./watch/watcher.js');
-      
+
       console.log(chalk.blue.bold('🚀 GLSP Generator v' + packageJson.version));
-      
+
       const watcher = new GrammarWatcher(argv.grammar!, argv.output!, {
         serve: argv.serve,
         port: argv.port,
@@ -606,22 +629,22 @@ cli.command(
         clearConsole: argv.clear,
         verbose: argv.verbose
       });
-      
+
       // Handle graceful shutdown
       process.on('SIGINT', async () => {
         console.log(chalk.yellow('\n\n👋 Shutting down...'));
         await watcher.stop();
         process.exit(0);
       });
-      
+
       process.on('SIGTERM', async () => {
         await watcher.stop();
         process.exit(0);
       });
-      
+
       // Start watching
       await watcher.start();
-      
+
     } catch (error) {
       console.error(chalk.red('❌ Watch mode failed:'), error);
       process.exit(1);
@@ -688,7 +711,7 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue.bold('🔒 Generating Type Safety Features'));
-      
+
       const grammarFile = argv.grammar;
       if (!grammarFile || !await fs.pathExists(grammarFile)) {
         console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
@@ -699,11 +722,11 @@ cli.command(
       let config = undefined;
       if (argv.config) {
         const configLoader = new ConfigLoader();
-        config = await configLoader.loadConfig(process.cwd(), argv.config);
+        config = await configLoader.loadConfig(getUserProjectRoot(), argv.config);
       }
 
       const generator = new GLSPGenerator(config);
-      
+
       const typeSafetyOptions = argv.all ? {} : {
         declarations: argv.declarations,
         validation: argv.validation,
@@ -713,7 +736,7 @@ cli.command(
       };
 
       await generator.generateTypeSafety(grammarFile, argv.output!, typeSafetyOptions);
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ Type safety generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -780,7 +803,7 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue.bold('🧪 Generating Test Infrastructure'));
-      
+
       const grammarFile = argv.grammar;
       if (!grammarFile || !await fs.pathExists(grammarFile)) {
         console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
@@ -788,7 +811,7 @@ cli.command(
       }
 
       const generator = new GLSPGenerator();
-      
+
       const testOptions = {
         unitTests: {
           generateModelTests: argv.unit,
@@ -824,17 +847,17 @@ cli.command(
       };
 
       await generator.generateTests(grammarFile, argv.output!, testOptions);
-      
+
       if (!argv['no-install']) {
         console.log(chalk.blue('\n📦 Installing test dependencies...'));
         const { execSync } = await import('child_process');
-        
+
         try {
           execSync('npm install --save-dev jest @jest/globals ts-jest @types/jest @faker-js/faker uuid @types/uuid', {
             cwd: argv.output,
             stdio: 'inherit'
           });
-          
+
           if (argv.e2e) {
             execSync('npm install --save-dev @playwright/test playwright', {
               cwd: argv.output,
@@ -845,20 +868,20 @@ cli.command(
               stdio: 'inherit'
             });
           }
-          
+
           console.log(chalk.green('✅ Test dependencies installed'));
         } catch (error) {
           console.warn(chalk.yellow('⚠️  Failed to install dependencies - run npm install manually'));
         }
       }
-      
+
       console.log(chalk.gray('\nNext steps:'));
       console.log(chalk.gray(`  cd ${argv.output}`));
       if (argv['no-install']) {
         console.log(chalk.gray('  npm install'));
       }
       console.log(chalk.gray('  npm test'));
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ Test generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -936,7 +959,7 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue.bold('🚀 Generating CI/CD Configuration'));
-      
+
       const grammarFile = argv.grammar;
       if (!grammarFile || !await fs.pathExists(grammarFile)) {
         console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
@@ -947,11 +970,11 @@ cli.command(
       let config = undefined;
       if (argv.config) {
         const configLoader = new ConfigLoader();
-        config = await configLoader.loadConfig(process.cwd(), argv.config);
+        config = await configLoader.loadConfig(getUserProjectRoot(), argv.config);
       }
 
       const generator = new GLSPGenerator(config);
-      
+
       const cicdOptions = {
         platforms: argv.platforms as string[],
         nodeVersions: argv['node-versions'] as string[],
@@ -977,7 +1000,7 @@ cli.command(
       };
 
       await generator.generateCICD(grammarFile, argv.output!, cicdOptions);
-      
+
       console.log(chalk.gray('\nNext steps:'));
       console.log(chalk.gray('1. Add secrets to your GitHub repository:'));
       console.log(chalk.gray('   - NPM_TOKEN (for npm publishing)'));
@@ -985,7 +1008,7 @@ cli.command(
       console.log(chalk.gray('   - CODECOV_TOKEN (for coverage reports)'));
       console.log(chalk.gray('2. Enable branch protection rules'));
       console.log(chalk.gray('3. Configure Dependabot/Renovate'));
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ CI/CD generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -1055,7 +1078,7 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue.bold('📚 Generating Documentation'));
-      
+
       const grammarFile = argv.grammar;
       if (!grammarFile || !await fs.pathExists(grammarFile)) {
         console.error(chalk.red(`❌ Grammar file not found: ${grammarFile || 'undefined'}`));
@@ -1066,11 +1089,11 @@ cli.command(
       let config = undefined;
       if (argv.config) {
         const configLoader = new ConfigLoader();
-        config = await configLoader.loadConfig(process.cwd(), argv.config);
+        config = await configLoader.loadConfig(getUserProjectRoot(), argv.config);
       }
 
       const generator = new GLSPGenerator(config);
-      
+
       const docsOptions = {
         readme: argv.readme,
         api: argv.api,
@@ -1081,7 +1104,7 @@ cli.command(
       };
 
       await generator.generateDocumentation(grammarFile, argv.output!, docsOptions);
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ Documentation generation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -1128,7 +1151,7 @@ cli.command(
         process.exit(1);
       }
       const projectPath = path.join(process.cwd(), projectName);
-      
+
       // Check if directory exists
       if (await fs.pathExists(projectPath)) {
         console.error(chalk.red(`❌ Directory already exists: ${argv.name}`));
@@ -1328,7 +1351,7 @@ generated
       if (!argv['no-git']) {
         const gitSpinner = ora('Initializing git repository...').start();
         const { execSync } = await import('child_process');
-        
+
         try {
           execSync('git init', { cwd: projectPath, stdio: 'ignore' });
           execSync('git add .', { cwd: projectPath, stdio: 'ignore' });
@@ -1343,7 +1366,7 @@ generated
       if (!argv['no-install']) {
         const installSpinner = ora('Installing dependencies...').start();
         const { execSync } = await import('child_process');
-        
+
         try {
           execSync('yarn install', { cwd: projectPath, stdio: 'ignore' });
           installSpinner.succeed('Dependencies installed');
@@ -1393,10 +1416,10 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue('📝 Creating GLSP configuration file...'));
-      
+
       const configLoader = new ConfigLoader();
       const outputPath = path.resolve(argv.path);
-      
+
       // Check if config already exists
       const configPath = path.join(outputPath, '.glsprc.json');
       if (await fs.pathExists(configPath) && !argv.force) {
@@ -1406,19 +1429,19 @@ cli.command(
           message: 'Configuration file already exists. Overwrite?',
           initial: false
         });
-        
+
         if (!response.overwrite) {
           console.log(chalk.yellow('Configuration creation cancelled'));
           return;
         }
-        
+
         await fs.remove(configPath);
       }
-      
+
       await configLoader.createDefaultConfig(outputPath);
       console.log(chalk.green('✅ Configuration file created successfully'));
       console.log(chalk.gray(`\nEdit ${path.relative(process.cwd(), configPath)} to customize your extension`));
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ Failed to create configuration: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -1449,21 +1472,21 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue('🔍 Validating configuration file...'));
-      
+
       const configPath = path.resolve(argv.config || '.glsprc.json');
       if (!await fs.pathExists(configPath)) {
         console.error(chalk.red(`❌ Configuration file not found: ${configPath}`));
         process.exit(1);
       }
-      
+
       const configLoader = new ConfigLoader();
       const result = await configLoader.validateConfigFile(configPath);
-      
+
       if (result.valid) {
         console.log(chalk.green('✅ Configuration is valid'));
-        
+
         if (argv.verbose) {
-          const config = await configLoader.loadConfig(process.cwd(), configPath);
+          const config = await configLoader.loadConfig(getUserProjectRoot(), configPath);
           console.log(chalk.gray('\nLoaded configuration:'));
           console.log(JSON.stringify(config, null, 2));
         }
@@ -1474,7 +1497,7 @@ cli.command(
         });
         process.exit(1);
       }
-      
+
     } catch (error) {
       console.error(chalk.red(`❌ Validation failed: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
@@ -1563,12 +1586,12 @@ cli.command(
             const { TemplateSystem } = await import('./templates/index.js');
             const templateSystem = new TemplateSystem();
             const packages = await templateSystem.listPackages();
-            
+
             if (packages.length === 0) {
               console.log(chalk.yellow('No template packages installed'));
               return;
             }
-            
+
             console.log(chalk.blue('📦 Installed template packages:'));
             packages.forEach(pkg => {
               console.log(chalk.green(`  ✓ ${pkg.name}@${pkg.version}`));
@@ -1597,16 +1620,16 @@ cli.command(
               console.error(chalk.red('❌ Search query is required'));
               process.exit(1);
             }
-            
+
             const { TemplateSystem } = await import('./templates/index.js');
             const templateSystem = new TemplateSystem();
             const packages = await templateSystem.searchPackages(argv.query);
-            
+
             if (packages.length === 0) {
               console.log(chalk.yellow(`No packages found for "${argv.query}"`));
               return;
             }
-            
+
             console.log(chalk.blue(`🔍 Found ${packages.length} package(s):`));
             packages.forEach(pkg => {
               const status = pkg.installed ? chalk.green('✓ installed') : chalk.gray('not installed');
@@ -1646,10 +1669,10 @@ cli.command(
               console.error(chalk.red('❌ Package name is required'));
               process.exit(1);
             }
-            
+
             const { TemplateSystem } = await import('./templates/index.js');
             const templateSystem = new TemplateSystem();
-            
+
             const spinner = ora(`Installing ${argv.package}...`).start();
             await templateSystem.installPackage(argv.package, {
               version: argv.version,
@@ -1677,12 +1700,12 @@ cli.command(
               console.error(chalk.red('❌ Package name is required'));
               process.exit(1);
             }
-            
+
             const { TemplateSystem } = await import('./templates/index.js');
             const templateSystem = new TemplateSystem();
-            
+
             const result = await templateSystem.validatePackage(argv.package);
-            
+
             if (result.valid) {
               console.log(chalk.green(`✅ ${argv.package} is valid`));
             } else {
@@ -1735,12 +1758,12 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue('🏃 Running performance benchmarks...'));
-      
+
       const { BenchmarkSuite } = await import('../scripts/benchmark.js');
       const suite = new BenchmarkSuite();
-      
+
       await suite.runAll();
-      
+
       console.log(chalk.green('✅ Benchmarks completed'));
       console.log(chalk.gray(`Results saved to: ${argv.output}`));
     } catch (error) {
@@ -1781,10 +1804,10 @@ cli.command(
   async (argv) => {
     try {
       console.log(chalk.blue('📊 Profiling grammar generation...'));
-      
+
       const { GLSPGenerator } = await import('./generator.js');
       const { PerformanceOptimizer } = await import('./performance/index.js');
-      
+
       // Create generator with profiling enabled
       const perfConfig = {
         enableCaching: true,
@@ -1794,10 +1817,10 @@ cli.command(
         enableMemoryMonitoring: true,
         profileMode: true
       };
-      
+
       const optimizer = new PerformanceOptimizer(perfConfig);
       const generator = new GLSPGenerator();
-      
+
       if (!argv.grammar) {
         console.error(chalk.red('❌ Grammar parameter is required'));
         process.exit(1);
@@ -1807,15 +1830,15 @@ cli.command(
       await generator.generateExtension(argv.grammar, argv.output, {
         performanceOptions: perfConfig
       });
-      
+
       // Save performance report
       const monitor = optimizer.getMonitor();
       const validFormats = ['json', 'html', 'text'] as const;
       type ReportFormat = typeof validFormats[number];
       const format = (validFormats.includes(argv.format as ReportFormat)) ? argv.format as ReportFormat : 'json';
-      
+
       await monitor.saveReport(argv.report, format);
-      
+
       console.log(chalk.green('✅ Profiling completed'));
       console.log(chalk.gray(`Report saved to: ${argv.report}`));
     } catch (error) {
@@ -1837,7 +1860,7 @@ cli.command(
           try {
             const { AdvancedCacheManager } = await import('./performance/cache-manager.js');
             const cacheManager = new AdvancedCacheManager();
-            
+
             cacheManager.invalidateAll();
             console.log(chalk.green('✅ Cache cleared'));
           } catch (error) {
@@ -1853,9 +1876,9 @@ cli.command(
           try {
             const { AdvancedCacheManager } = await import('./performance/cache-manager.js');
             const cacheManager = new AdvancedCacheManager();
-            
+
             const stats = cacheManager.getStats();
-            
+
             console.log(chalk.blue('📊 Cache Statistics:'));
             console.log(`  Hits: ${stats.hits}`);
             console.log(`  Misses: ${stats.misses}`);
@@ -1992,7 +2015,7 @@ if (process.argv.length <= 2) {
         message: 'Configuration file location:',
         initial: '.'
       });
-      
+
       cli.parse(['init', '--path', inputs.path || '.']);
     } else if (response.command === 'validate-config') {
       const inputs = await prompts({
@@ -2001,7 +2024,7 @@ if (process.argv.length <= 2) {
         message: 'Configuration file:',
         initial: '.glsprc.json'
       });
-      
+
       if (inputs.config) {
         cli.parse(['validate-config', inputs.config]);
       }

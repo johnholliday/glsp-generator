@@ -32,7 +32,10 @@
       "Bash(/mnt/c/nvm4w/nodejs/yarn test)",
       "Bash(yarn copy-templates:*)",
       "Bash(npx ts-node:*)",
-      "Bash(tsc)"
+      "Bash(tsc)",
+      "Bash(rg:*)",
+      "Bash(timeout 10 node dist/cli.js generate:*)",
+      "Bash(yarn build:*)"
     ],
     "deny": []
   }

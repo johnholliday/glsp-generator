@@ -1,0 +1,32 @@
+{
+    "name": "@glsp-generator/default-templates",
+    "version": "1.0.0",
+    "description": "Default GLSP templates with Yarn 1.x support",
+    "templates": {
+        "package-json": {
+            "description": "Package.json with Yarn 1.x configuration",
+            "targetDir": "."
+        },
+        ".yarnrc": {
+            "description": "Yarn Classic configuration file",
+            "targetDir": "."
+        },
+        "yarn.lock": {
+            "description": "Yarn lockfile template",
+            "targetDir": "."
+        },
+        "tsconfig": {
+            "description": "TypeScript configuration",
+            "targetDir": "."
+        },
+        "README.md": {
+            "description": "Project README",
+            "targetDir": "."
+        }
+    },
+    "features": [
+        "yarn-classic-support",
+        "theia-compatibility",
+        "package-manager-enforcement"
+    ]
+}

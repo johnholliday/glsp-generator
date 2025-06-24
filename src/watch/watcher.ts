@@ -26,6 +26,7 @@ export class GrammarWatcher {
     private generationCount = 0;
     private errorCount = 0;
     private config?: GLSPConfig;
+    private extensionDir?: string;
 
     constructor(
         private grammarPath: string,
@@ -158,7 +159,9 @@ export class GrammarWatcher {
             }
 
             // Generate extension
-            await this.generator.generateExtension(this.grammarPath, this.outputDir);
+            const { extensionDir } = await this.generator.generateExtension(this.grammarPath, this.outputDir);
+            // Store the extension directory for potential use
+            this.extensionDir = extensionDir;
 
             const duration = Date.now() - startTime;
             this.lastGenerationTime = duration;

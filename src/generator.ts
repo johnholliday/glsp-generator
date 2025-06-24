@@ -88,7 +88,7 @@ export class GLSPGenerator {
       templateOptions?: TemplateOptions;
       performanceOptions?: PerformanceConfig;
     }
-  ): Promise<void> {
+  ): Promise<{ extensionDir: string }> {
     // Start performance monitoring
     this.performanceOptimizer.startMonitoring();
     const progress = this.performanceOptimizer.getProgress();
@@ -97,6 +97,8 @@ export class GLSPGenerator {
     if (!progress && !this.isTestEnvironment()) {
       throw new Error('Failed to initialize progress tracking');
     }
+
+    let extensionDir: string;
 
     try {
       progress?.start();
@@ -239,7 +241,7 @@ export class GLSPGenerator {
       const extensionName = this.config.extension.name === 'my-glsp-extension'
         ? `${parsedGrammar.projectName}-glsp-extension`
         : this.config.extension.name;
-      const extensionDir = path.join(outputDir, extensionName);
+      extensionDir = path.join(outputDir, extensionName);
 
       // Phase 2: Setup
       progress?.startPhase('Setup');
@@ -304,7 +306,14 @@ export class GLSPGenerator {
     } finally {
       // Stop monitoring and generate performance report
       await this.performanceOptimizer.stopMonitoring();
+      
+      // Force cleanup of any remaining resources
+      if (global.gc) {
+        global.gc();
+      }
     }
+
+    return { extensionDir };
   }
 
   private async createProjectStructure(extensionDir: string): Promise<void> {
@@ -362,6 +371,8 @@ export class GLSPGenerator {
         }
       },
       outputDir: extensionDir,
+      // Add timestamp for templates
+      timestamp: new Date().toISOString(),
       // Legacy template data format for backward compatibility
       interfaces: context.grammar.interfaces,
       types: context.grammar.types
@@ -496,6 +507,17 @@ export class GLSPGenerator {
 
     // Helper for logical NOT
     Handlebars.registerHelper('not', (value: any) => !value);
+
+    // Helper for formatting dates
+    Handlebars.registerHelper('formatDate', (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    });
 
     // Helper for logical AND
     Handlebars.registerHelper('and', (...args: any[]) => {
@@ -674,6 +696,6 @@ export class GLSPGenerator {
    * Alias for generateExtension for backward compatibility
    */
   async generate(grammarFile: string, outputDir: string = '.'): Promise<void> {
-    return this.generateExtension(grammarFile, outputDir);
+    await this.generateExtension(grammarFile, outputDir);
   }
 }

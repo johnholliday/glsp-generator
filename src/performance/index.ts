@@ -175,17 +175,26 @@ export class PerformanceOptimizer {
 
         // Setup automatic cache persistence
         if (this.config.enableCaching) {
-            process.on('beforeExit', async () => {
-                await this.cacheManager.save();
+            // Use 'exit' instead of 'beforeExit' to avoid keeping process alive
+            process.once('exit', () => {
+                // Note: Only synchronous operations in exit handler
+                try {
+                    this.cacheManager.saveSync();
+                } catch (error) {
+                    // Ignore errors during exit
+                }
             });
         }
 
-        // Setup graceful shutdown
-        process.on('SIGINT', async () => {
-            console.log('\n🛑 Graceful shutdown initiated...');
-            await this.stopMonitoring();
-            process.exit(0);
-        });
+        // Only setup SIGINT handler in watch mode or when explicitly needed
+        // This prevents the process from staying alive in non-watch generation mode
+        if (this.config.profileMode) {
+            process.once('SIGINT', async () => {
+                console.log('\n🛑 Graceful shutdown initiated...');
+                await this.stopMonitoring();
+                process.exit(0);
+            });
+        }
     }
 }
 

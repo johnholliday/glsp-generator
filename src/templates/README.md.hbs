@@ -1,0 +1,287 @@
+# {{#if config.extension.displayName}}{{config.extension.displayName}}{{else}}{{projectName}} GLSP Extension{{/if}}
+
+{{#if config.extension.description}}{{config.extension.description}}{{else}}A GLSP-based visual modeling tool for {{projectName}}.{{/if}}
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 16.x or higher
+- **Yarn Classic (1.x)** - **REQUIRED** for Theia compatibility
+- **VS Code** or **Theia IDE**
+
+### ⚠️ Important: Yarn Version Requirements
+
+This project **MUST** use Yarn Classic (1.x) for compatibility with the Theia framework. The project is configured to enforce this requirement.
+
+#### Automatic Setup (Recommended)
+
+The project includes a `packageManager` field in `package.json` that automatically uses Yarn 1.22.19:
+
+```bash
+# Clone and install - Corepack will automatically use the correct Yarn version
+git clone <your-repo>
+cd {{projectName}}-glsp-extension
+yarn install
+```
+
+#### Manual Setup (if needed)
+
+If you encounter Yarn version issues:
+
+```bash
+# Enable Corepack (if not already enabled)
+corepack enable
+
+# Verify correct Yarn version is being used
+yarn --version  # Should show 1.22.19
+
+# If wrong version, force Corepack to use the specified version
+corepack use yarn@1.22.19
+```
+
+### Installation
+
+```bash
+# Install dependencies
+yarn install
+
+# Build the extension
+yarn build
+
+# Watch for changes during development
+yarn watch
+```
+
+## 📁 Project Structure
+
+```
+{{projectName}}-glsp-extension/
+├── src/
+│   ├── browser/          # Browser-side code
+│   │   └── diagram/      # Diagram-specific browser components
+│   ├── common/           # Shared code between browser and server
+│   ├── node/             # Node.js specific code
+│   └── server/           # Server-side GLSP implementation
+│       ├── diagram/      # Diagram configuration
+│       ├── handlers/     # Command and action handlers
+│       └── model/        # Domain model definitions
+├── package.json          # Project configuration with packageManager field
+├── .yarnrc              # Yarn Classic configuration
+├── yarn.lock            # Dependency lock file
+└── tsconfig.json        # TypeScript configuration
+```
+
+## 🛠️ Development
+
+### Available Scripts
+
+```bash
+# Build the project
+yarn build
+
+# Watch for changes and rebuild automatically
+yarn watch
+
+# Clean build artifacts
+yarn clean
+
+# Run tests (if enabled)
+{{#if config.generation.generateTests}}yarn test{{else}}# Tests not configured{{/if}}
+```
+
+### Development Workflow
+
+1. **Start the watch mode**: `yarn watch`
+2. **Make your changes** to the source files
+3. **Test in VS Code/Theia**: The extension will be automatically rebuilt
+
+### Adding New Features
+
+{{#if interfaces}}
+#### Available Interfaces
+
+{{#each interfaces}}
+- **{{name}}**: {{#if description}}{{description}}{{else}}{{name}} interface{{/if}}
+  {{#if properties}}
+  {{#each properties}}
+  - `{{name}}`: {{type}}{{#if optional}} (optional){{/if}}
+  {{/each}}
+  {{/if}}
+
+{{/each}}
+{{/if}}
+
+{{#if types}}
+#### Available Types
+
+{{#each types}}
+- **{{name}}**: {{#if description}}{{description}}{{else}}{{name}} type{{/if}}
+
+{{/each}}
+{{/if}}
+
+## 🔧 Configuration
+
+### Yarn Configuration
+
+The project uses a comprehensive `.yarnrc` configuration that:
+
+- Enforces Yarn Classic (1.x) usage
+- Prevents automatic upgrades to newer Yarn versions
+- Optimizes for Theia extension development
+- Ensures consistent dependency resolution
+
+### Package Manager Enforcement
+
+The `package.json` includes:
+
+```json
+{
+  "packageManager": "yarn@1.22.19",
+  "engines": {
+    "node": ">=16.0.0",
+    "yarn": ">=1.0.0 <2.0.0"
+  }
+}
+```
+
+This ensures:
+- Corepack automatically uses the correct Yarn version
+- CI/CD environments use the same Yarn version
+- Team members can't accidentally use incompatible versions
+
+## 🚀 Deployment
+
+### Building for Production
+
+```bash
+# Clean and build
+yarn clean && yarn build
+```
+
+### VS Code Extension Packaging
+
+```bash
+# Install vsce if not already installed
+npm install -g vsce
+
+# Package the extension
+vsce package
+```
+
+### Theia Integration
+
+This extension is designed to work with Theia. To integrate:
+
+1. Build the extension: `yarn build`
+2. Add to your Theia application's dependencies
+3. Import and configure in your Theia frontend module
+
+## 🐛 Troubleshooting
+
+### Yarn Version Issues
+
+**Problem**: Wrong Yarn version being used
+
+**Solution**:
+```bash
+# Check current version
+yarn --version
+
+# If not 1.22.19, enable Corepack and retry
+corepack enable
+corepack use yarn@1.22.19
+yarn --version  # Should now show 1.22.19
+```
+
+**Problem**: `packageManager` field not respected
+
+**Solution**:
+```bash
+# Ensure Corepack is enabled
+corepack enable
+
+# Clear any cached versions
+corepack cache clean
+
+# Reinstall dependencies
+rm -rf node_modules yarn.lock
+yarn install
+```
+
+### Build Issues
+
+**Problem**: TypeScript compilation errors
+
+**Solution**:
+```bash
+# Clean and rebuild
+yarn clean
+yarn build
+
+# Check TypeScript version
+yarn tsc --version
+```
+
+**Problem**: Missing dependencies
+
+**Solution**:
+```bash
+# Reinstall all dependencies
+rm -rf node_modules
+yarn install
+```
+
+## 📚 Documentation
+
+{{#if config.generation.generateDocs}}
+- [API Documentation](./docs/api/)
+- [Architecture Overview](./docs/architecture.md)
+- [Examples](./docs/examples/)
+{{else}}
+Documentation can be generated using the GLSP Generator's documentation features.
+{{/if}}
+
+## 🤝 Contributing
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Ensure** you're using Yarn Classic: `yarn --version` should show 1.x
+4. **Install** dependencies: `yarn install`
+5. **Make** your changes
+6. **Test** your changes: `yarn build`
+7. **Commit** your changes: `git commit -m 'Add amazing feature'`
+8. **Push** to the branch: `git push origin feature/amazing-feature`
+9. **Open** a Pull Request
+
+### Development Environment Setup
+
+```bash
+# Clone your fork
+git clone https://github.com/your-username/{{projectName}}-glsp-extension.git
+cd {{projectName}}-glsp-extension
+
+# Ensure Corepack is enabled (for automatic Yarn version management)
+corepack enable
+
+# Install dependencies (will automatically use Yarn 1.22.19)
+yarn install
+
+# Start development
+yarn watch
+```
+
+## 📄 License
+
+{{#if config.extension.license}}{{config.extension.license}}{{else}}MIT{{/if}}
+
+## 🙏 Acknowledgments
+
+- Built with [Eclipse GLSP](https://www.eclipse.org/glsp/)
+- Generated by [GLSP Generator](https://github.com/your-org/glsp-generator)
+- Compatible with [Eclipse Theia](https://theia-ide.org/)
+
+---
+
+**Note**: This extension requires Yarn Classic (1.x) for Theia compatibility. The project configuration automatically enforces this requirement.

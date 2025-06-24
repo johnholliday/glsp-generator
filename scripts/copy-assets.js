@@ -23,6 +23,12 @@ async function copyAssets() {
       from: path.join(rootDir, 'src/config/glsprc.schema.json'),
       to: path.join(rootDir, 'dist/config/glsprc.schema.json'),
       name: 'Config Schema'
+    },
+    // Copy worker files
+    {
+      from: path.join(rootDir, 'src/performance/template-worker.js'),
+      to: path.join(rootDir, 'dist/performance/template-worker.js'),
+      name: 'Template Worker'
     }
   ];
   

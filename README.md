@@ -16,7 +16,7 @@ A TypeScript-based tool for generating Theia GLSP extensions from Langium gramma
 
 ## What's New
 
-### Version 2.0.0
+### Version 2.1.7
 - **Langium AST Parser**: Replaced regex-based parsing with Langium's official AST parser
 - **Fixed Type Generation**: Union types now generate proper TypeScript string literals
 - **Improved Naming**: Consistent PascalCase/camelCase naming throughout generated code
@@ -475,7 +475,7 @@ glsp gen grammar.langium
 glsp gen grammar.langium --config ./config/.glsprc.json
 
 # Override config values
-glsp gen grammar.langium --set extension.version=2.0.0 --set styling.theme=dark
+glsp gen grammar.langium --set extension.version=2.1.7 --set styling.theme=dark
 ```
 
 #### With Watch Mode

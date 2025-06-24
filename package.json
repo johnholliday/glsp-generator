@@ -1,16 +1,19 @@
 {
   "name": "glsp-generator",
-  "version": "2.0.0",
+  "version": "2.1.7",
   "description": "Generate Theia GLSP extensions from Langium grammars",
   "type": "module",
   "main": "dist/index.js",
   "packageManager": "yarn@4.9.1",
   "bin": {
     "glsp": "./dist/cli.js",
-    "glsp-gen": "./dist/cli.js"
+    "glspgen": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc && yarn copy-assets",
+    "build": "node scripts/bump-version.js && tsc && yarn copy-assets",
+    "build:no-version": "tsc && yarn copy-assets",
+    "build:clean": "node scripts/build-with-version.js",
+    "bump-version": "node scripts/bump-version.js",
     "copy-assets": "node scripts/copy-assets.js",
     "dev": "tsc --watch",
     "test": "vitest",
@@ -24,6 +27,7 @@
     "prepare": "husky install",
     "setup:dev": "node scripts/setup-dev-cli.js",
     "link:global": "yarn build && yarn link",
+    "install:global": "yarn build && npm cache clean --force && npm uninstall -g @johnholliday/glspgen && npm install -g --force .",
     "test:examples": "node scripts/test-all-examples.mjs"
   },
   "keywords": [
