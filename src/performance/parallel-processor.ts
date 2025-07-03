@@ -1,11 +1,11 @@
 import os from 'os';
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
+import { Worker /* , isMainThread, parentPort, workerData */ } from 'worker_threads';
 import path from 'path';
 import {
     ParallelProcessingOptions,
     WorkerTask,
     WorkerResult,
-    ResourcePool,
+    // ResourcePool,
     WorkerPool,
     PerformanceConfig
 } from './types';
@@ -15,6 +15,22 @@ import { PerformanceMonitor } from './monitor.js';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * @deprecated This class has been refactored to use dependency injection.
+ * Use ParallelTemplateProcessorService with the DI container instead.
+ *
+ * Migration guide:
+ * ```typescript
+ * import { container } from '../config/di/container.js';
+ * import { TYPES } from '../config/di/types.js';
+ * import { IParallelTemplateProcessor } from './interfaces/parallel-template-processor.interface.js';
+ *
+ * const processor = container.get<IParallelTemplateProcessor>(TYPES.IParallelTemplateProcessor);
+ * const results = await processor.processTemplates(templates, context, options);
+ * await processor.cleanup();
+ * ```
+ */
 
 export interface Template {
     name: string;
@@ -125,7 +141,7 @@ export class ParallelTemplateProcessor {
      */
     private async processTask(task: WorkerTask<any, ProcessingResult>): Promise<WorkerResult<ProcessingResult>> {
         const startTime = Date.now();
-        const startMemory = process.memoryUsage();
+        // const _startMemory = process.memoryUsage();
 
         try {
             const worker = await this.workerPool.acquire();
@@ -256,7 +272,7 @@ export class WorkerThreadPool implements WorkerPool<Worker> {
 
     constructor(
         private maxSize: number,
-        private options: ParallelProcessingOptions = {}
+        private _options: ParallelProcessingOptions = {} // eslint-disable-line @typescript-eslint/no-unused-vars
     ) {
         this.initialize();
     }

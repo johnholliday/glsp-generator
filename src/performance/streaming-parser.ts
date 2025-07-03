@@ -1,4 +1,4 @@
-import { Transform, Readable } from 'stream';
+import { Transform /* , Readable */ } from 'stream';
 import fs from 'fs-extra';
 import { PerformanceMonitor } from './monitor.js';
 import { PerformanceConfig, StreamingOptions } from './types';
@@ -12,7 +12,7 @@ export class StreamingGrammarParser {
     private options: StreamingOptions;
 
     constructor(
-        private config: PerformanceConfig = {},
+        private _config: PerformanceConfig = {},
         monitor?: PerformanceMonitor
     ) {
         this.monitor = monitor || new PerformanceMonitor();
@@ -21,7 +21,7 @@ export class StreamingGrammarParser {
             maxConcurrency: 4,
             bufferSize: 1024 * 1024, // 1MB buffer
             enableCaching: true,
-            ...config
+            ...this._config
         };
     }
 
@@ -144,7 +144,10 @@ export class StreamingGrammarParser {
             metadata: {
                 ruleCount: rules.length,
                 interfaceCount: interfaces.length,
-                parseTime: Date.now()
+                parseTime: Date.now(),
+                typeCount: types.length,
+                hasComplexTypes: false,
+                hasCircularReferences: false
             }
         };
     }
@@ -164,7 +167,7 @@ export class StreamingGrammarParser {
         const self = this;
         return new Transform({
             objectMode: true,
-            transform(chunk: any, encoding: string, callback: Function) {
+            transform(chunk: any, _encoding: string, callback: Function) {
                 try {
                     // Process chunk
                     const processed = self.processChunk(chunk);
@@ -224,7 +227,10 @@ export class StreamingGrammarConverter {
                 metadata: {
                     ruleCount: 0,
                     interfaceCount: grammar.interfaces.length,
-                    parseTime: Date.now()
+                    parseTime: Date.now(),
+                    typeCount: grammar.types.length,
+                    hasComplexTypes: false,
+                    hasCircularReferences: false
                 }
             };
         } finally {

@@ -25,8 +25,8 @@ export class GrammarWatcher {
     private lastGenerationTime = 0;
     private generationCount = 0;
     private errorCount = 0;
-    private config?: GLSPConfig;
-    private extensionDir?: string;
+    private _config?: GLSPConfig;
+    private _extensionDir?: string;
 
     constructor(
         private grammarPath: string,
@@ -36,36 +36,35 @@ export class GrammarWatcher {
         // Normalize paths
         this.grammarPath = path.resolve(this.grammarPath);
         this.outputDir = path.resolve(this.outputDir);
-        
-        // Generator will be initialized after config is loaded
+
+        // Create generator instance
         this.generator = new GLSPGenerator();
     }
-    
+
     private async loadConfig(): Promise<void> {
         const configLoader = new ConfigLoader();
-        this.config = await configLoader.loadConfig(process.cwd(), this.options.config);
-        this.generator = new GLSPGenerator(this.config);
+        this._config = await configLoader.loadConfig(process.cwd(), this.options.config);
     }
 
     async start(): Promise<void> {
         // Load configuration first
         await this.loadConfig();
-        
+
         this.printHeader();
-        
+
         // Initial generation
         await this.regenerate();
-        
+
         // Start development server if requested
         if (this.options.serve) {
             this.devServer = new DevServer(this.outputDir, this.options.port || 3000);
             await this.devServer.start();
             console.log(chalk.cyan(`\n🌐 Development server: http://localhost:${this.options.port || 3000}`));
         }
-        
+
         // Set up file watching
         this.setupWatcher();
-        
+
         console.log(chalk.blue('\n👀 Watching for changes...'));
         console.log(chalk.gray('Press Ctrl+C to stop\n'));
     }
@@ -84,18 +83,18 @@ export class GrammarWatcher {
 
     private setupWatcher(): void {
         const watchPaths = [this.grammarPath];
-        
+
         // Also watch config file if specified
         if (this.options.config && fs.existsSync(this.options.config)) {
             watchPaths.push(this.options.config);
         }
-        
+
         // Watch template directory if in development mode
         const templateDir = path.join(path.dirname(this.grammarPath), '../src/templates');
         if (fs.existsSync(templateDir) && this.options.verbose) {
             watchPaths.push(path.join(templateDir, '**/*.hbs'));
         }
-        
+
         this.watcher = watch(watchPaths, {
             persistent: true,
             ignoreInitial: true,
@@ -127,9 +126,9 @@ export class GrammarWatcher {
         this.debounceTimer = setTimeout(() => {
             const relativePath = path.relative(process.cwd(), filepath);
             const timestamp = new Date().toLocaleTimeString();
-            
+
             console.log(chalk.gray(`[${timestamp}] `) + chalk.yellow(`♻️  Changed: ${relativePath}`));
-            
+
             this.regenerate();
         }, this.options.debounceMs || 500);
     }
@@ -161,7 +160,7 @@ export class GrammarWatcher {
             // Generate extension
             const { extensionDir } = await this.generator.generateExtension(this.grammarPath, this.outputDir);
             // Store the extension directory for potential use
-            this.extensionDir = extensionDir;
+            this._extensionDir = extensionDir;
 
             const duration = Date.now() - startTime;
             this.lastGenerationTime = duration;
@@ -169,7 +168,7 @@ export class GrammarWatcher {
             this.errorCount = 0;
 
             console.log(
-                chalk.gray(`[${timestamp}] `) + 
+                chalk.gray(`[${timestamp}] `) +
                 chalk.green(`✅ Regenerated successfully in ${duration}ms`) +
                 chalk.gray(` (Generation #${this.generationCount})`)
             );
@@ -183,19 +182,19 @@ export class GrammarWatcher {
         } catch (error) {
             this.errorCount++;
             const errorMessage = error instanceof Error ? error.message : String(error);
-            
+
             console.log(
-                chalk.gray(`[${timestamp}] `) + 
+                chalk.gray(`[${timestamp}] `) +
                 chalk.red(`❌ Generation failed (Error #${this.errorCount}):`)
             );
             console.error(chalk.red(errorMessage));
-            
+
             if (this.options.verbose && error instanceof Error && error.stack) {
                 console.error(chalk.gray(error.stack));
             }
-            
+
             console.log(chalk.yellow('\n⏳ Waiting for fixes...'));
-            
+
             // Notify development server of error
             if (this.devServer) {
                 this.devServer.notifyError(errorMessage);
@@ -210,15 +209,15 @@ export class GrammarWatcher {
         console.log(chalk.gray('='.repeat(50)));
         console.log(chalk.cyan('Grammar:'), this.grammarPath);
         console.log(chalk.cyan('Output:'), this.outputDir);
-        
+
         if (this.options.config) {
             console.log(chalk.cyan('Config:'), this.options.config);
         }
-        
+
         if (this.options.serve) {
             console.log(chalk.cyan('Server:'), `http://localhost:${this.options.port || 3000}`);
         }
-        
+
         console.log(chalk.gray('='.repeat(50)));
     }
 

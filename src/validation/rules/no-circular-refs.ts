@@ -13,12 +13,12 @@ export class NoCircularRefsRule implements LinterRule {
 
         // Build dependency graph
         const dependencies = new Map<string, Set<string>>();
-        
+
         if (ast.rules) {
             ast.rules.forEach((rule: any) => {
                 if (rule.$type === 'Interface' && rule.name) {
                     const deps = new Set<string>();
-                    
+
                     // Add super types
                     if (rule.superTypes) {
                         rule.superTypes.forEach((superType: any) => {
@@ -28,7 +28,7 @@ export class NoCircularRefsRule implements LinterRule {
                             }
                         });
                     }
-                    
+
                     // Add reference types (properties with @)
                     if (rule.features) {
                         rule.features.forEach((feature: any) => {
@@ -38,21 +38,21 @@ export class NoCircularRefsRule implements LinterRule {
                             }
                         });
                     }
-                    
+
                     dependencies.set(rule.name, deps);
                 }
             });
         }
 
         // Check for circular references
-        dependencies.forEach((deps, typeName) => {
+        dependencies.forEach((_deps, typeName) => {
             const visited = new Set<string>();
             const path: string[] = [];
-            
+
             if (this.hasCycle(typeName, dependencies, visited, path)) {
                 const location = this.findTypeLocation(typeName, lines);
                 const cycle = [...path, typeName].join(' → ');
-                
+
                 diagnostics.push(createDiagnostic(
                     'warning',
                     'GLSP005',
@@ -77,22 +77,22 @@ export class NoCircularRefsRule implements LinterRule {
     }
 
     private hasCycle(
-        current: string, 
-        dependencies: Map<string, Set<string>>, 
-        visited: Set<string>, 
+        current: string,
+        dependencies: Map<string, Set<string>>,
+        visited: Set<string>,
         path: string[]
     ): boolean {
         if (path.includes(current)) {
             return true;
         }
-        
+
         if (visited.has(current)) {
             return false;
         }
-        
+
         visited.add(current);
         path.push(current);
-        
+
         const deps = dependencies.get(current);
         if (deps) {
             for (const dep of deps) {
@@ -101,7 +101,7 @@ export class NoCircularRefsRule implements LinterRule {
                 }
             }
         }
-        
+
         path.pop();
         return false;
     }
@@ -121,9 +121,9 @@ export class NoCircularRefsRule implements LinterRule {
             const line = lines[i];
             const match = line.match(new RegExp(`interface\\s+${typeName}\\b`));
             if (match) {
-                return { 
-                    line: i + 1, 
-                    column: match.index! + 'interface '.length + 1 
+                return {
+                    line: i + 1,
+                    column: match.index! + 'interface '.length + 1
                 };
             }
         }

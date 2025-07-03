@@ -5,41 +5,41 @@ import { GLSPConfig } from '../config/types.js';
 import Handlebars from 'handlebars';
 
 export interface WorkflowGeneratorOptions {
-    generateBuildWorkflow?: boolean;
-    generateReleaseWorkflow?: boolean;
-    generateSecurityWorkflow?: boolean;
-    generateDependencyUpdateWorkflow?: boolean;
-    generateNightlyWorkflow?: boolean;
-    nodeVersions?: string[];
-    platforms?: string[];
-    includeE2ETests?: boolean;
-    includeCoverage?: boolean;
-    coverageThreshold?: number;
-    publishToNpm?: boolean;
-    publishToOpenVsx?: boolean;
+  generateBuildWorkflow?: boolean;
+  generateReleaseWorkflow?: boolean;
+  generateSecurityWorkflow?: boolean;
+  generateDependencyUpdateWorkflow?: boolean;
+  generateNightlyWorkflow?: boolean;
+  nodeVersions?: string[];
+  platforms?: string[];
+  includeE2ETests?: boolean;
+  includeCoverage?: boolean;
+  coverageThreshold?: number;
+  publishToNpm?: boolean;
+  publishToOpenVsx?: boolean;
 }
 
 export class WorkflowGenerator {
-    private buildWorkflowTemplate!: HandlebarsTemplateDelegate;
-    private releaseWorkflowTemplate!: HandlebarsTemplateDelegate;
-    private securityWorkflowTemplate!: HandlebarsTemplateDelegate;
-    private dependencyUpdateTemplate!: HandlebarsTemplateDelegate;
-    private nightlyBuildTemplate!: HandlebarsTemplateDelegate;
-    
-    constructor() {
-        this.loadTemplates();
-        this.registerHelpers();
-    }
-    
-    private preprocessTemplate(template: string): string {
-        // Remove backslash escapes first, then replace GitHub Actions expressions
-        return template
-            .replace(/\\\$/g, '$')
-            .replace(/\$\{\{/g, '___GH_EXPR_START___');
-    }
-    
-    private loadTemplates(): void {
-        const buildTemplate = `name: Build and Test
+  private buildWorkflowTemplate!: HandlebarsTemplateDelegate;
+  private releaseWorkflowTemplate!: HandlebarsTemplateDelegate;
+  private securityWorkflowTemplate!: HandlebarsTemplateDelegate;
+  private dependencyUpdateTemplate!: HandlebarsTemplateDelegate;
+  private nightlyBuildTemplate!: HandlebarsTemplateDelegate;
+
+  constructor() {
+    this.loadTemplates();
+    this.registerHelpers();
+  }
+
+  private preprocessTemplate(template: string): string {
+    // Remove backslash escapes first, then replace GitHub Actions expressions
+    return template
+      .replace(/\\\$/g, '$')
+      .replace(/\$\{\{/g, '___GH_EXPR_START___');
+  }
+
+  private loadTemplates(): void {
+    const buildTemplate = `name: Build and Test
 
 on:
   push:
@@ -174,10 +174,10 @@ jobs:
           exit 1
         fi
 `;
-        
-        this.buildWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(buildTemplate));
 
-        const releaseTemplate = `name: Release
+    this.buildWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(buildTemplate));
+
+    const releaseTemplate = `name: Release
 
 on:
   push:
@@ -284,9 +284,9 @@ jobs:
         docker push ghcr.io/\$\{{ github.repository }}/{{projectName}}:latest
 `;
 
-        this.releaseWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(releaseTemplate));
+    this.releaseWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(releaseTemplate));
 
-        const securityTemplate = `name: Security Scan
+    const securityTemplate = `name: Security Scan
 
 on:
   push:
@@ -381,9 +381,9 @@ jobs:
         extra_args: --debug --only-verified
 `;
 
-        this.securityWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(securityTemplate));
+    this.securityWorkflowTemplate = Handlebars.compile(this.preprocessTemplate(securityTemplate));
 
-        const dependencyUpdateTemplate = `name: Dependency Updates
+    const dependencyUpdateTemplate = `name: Dependency Updates
 
 on:
   schedule:
@@ -489,9 +489,9 @@ jobs:
         labels: security, automated, priority
 `;
 
-        this.dependencyUpdateTemplate = Handlebars.compile(this.preprocessTemplate(dependencyUpdateTemplate));
+    this.dependencyUpdateTemplate = Handlebars.compile(this.preprocessTemplate(dependencyUpdateTemplate));
 
-        const nightlyBuildTemplate = `name: Nightly Build
+    const nightlyBuildTemplate = `name: Nightly Build
 
 on:
   schedule:
@@ -612,170 +612,170 @@ jobs:
           })
 `;
 
-        this.nightlyBuildTemplate = Handlebars.compile(this.preprocessTemplate(nightlyBuildTemplate));
+    this.nightlyBuildTemplate = Handlebars.compile(this.preprocessTemplate(nightlyBuildTemplate));
+  }
+
+  private registerHelpers(): void {
+    Handlebars.registerHelper('json', (context: any) => {
+      return JSON.stringify(context, null, 2);
+    });
+  }
+
+  private restoreGitHubExpressions(template: string): string {
+    // Restore the GitHub Actions expression syntax
+    return template.replace(/___GH_EXPR_START___/g, '${{');
+  }
+
+  async generate(
+    grammar: ParsedGrammar,
+    config: GLSPConfig,
+    outputDir: string,
+    options: WorkflowGeneratorOptions = {}
+  ): Promise<string[]> {
+    const opts = {
+      generateBuildWorkflow: true,
+      generateReleaseWorkflow: true,
+      generateSecurityWorkflow: true,
+      generateDependencyUpdateWorkflow: true,
+      generateNightlyWorkflow: true,
+      nodeVersions: ['16.x', '18.x', '20.x'],
+      platforms: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
+      includeE2ETests: true,
+      includeCoverage: true,
+      coverageThreshold: 80,
+      publishToNpm: true,
+      publishToOpenVsx: true,
+      ...options
+    };
+
+    const generatedFiles: string[] = [];
+
+    // Create .github/workflows directory
+    const workflowsDir = path.join(outputDir, '.github', 'workflows');
+    await fs.ensureDir(workflowsDir);
+
+    // Generate build workflow
+    if (opts.generateBuildWorkflow) {
+      const buildPath = path.join(workflowsDir, 'build.yml');
+      const content = this.generateBuildWorkflow(grammar, config, opts);
+      await fs.writeFile(buildPath, content);
+      generatedFiles.push(buildPath);
     }
-    
-    private registerHelpers(): void {
-        Handlebars.registerHelper('json', (context: any) => {
-            return JSON.stringify(context, null, 2);
-        });
+
+    // Generate release workflow
+    if (opts.generateReleaseWorkflow) {
+      const releasePath = path.join(workflowsDir, 'release.yml');
+      const content = this.generateReleaseWorkflow(grammar, config, opts);
+      await fs.writeFile(releasePath, content);
+      generatedFiles.push(releasePath);
     }
-    
-    private restoreGitHubExpressions(template: string): string {
-        // Restore the GitHub Actions expression syntax
-        return template.replace(/___GH_EXPR_START___/g, '${{');
+
+    // Generate security workflow
+    if (opts.generateSecurityWorkflow) {
+      const securityPath = path.join(workflowsDir, 'security.yml');
+      const content = this.generateSecurityWorkflow(grammar, config, opts);
+      await fs.writeFile(securityPath, content);
+      generatedFiles.push(securityPath);
     }
-    
-    async generate(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        outputDir: string,
-        options: WorkflowGeneratorOptions = {}
-    ): Promise<string[]> {
-        const opts = {
-            generateBuildWorkflow: true,
-            generateReleaseWorkflow: true,
-            generateSecurityWorkflow: true,
-            generateDependencyUpdateWorkflow: true,
-            generateNightlyWorkflow: true,
-            nodeVersions: ['16.x', '18.x', '20.x'],
-            platforms: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
-            includeE2ETests: true,
-            includeCoverage: true,
-            coverageThreshold: 80,
-            publishToNpm: true,
-            publishToOpenVsx: true,
-            ...options
-        };
-        
-        const generatedFiles: string[] = [];
-        
-        // Create .github/workflows directory
-        const workflowsDir = path.join(outputDir, '.github', 'workflows');
-        await fs.ensureDir(workflowsDir);
-        
-        // Generate build workflow
-        if (opts.generateBuildWorkflow) {
-            const buildPath = path.join(workflowsDir, 'build.yml');
-            const content = this.generateBuildWorkflow(grammar, config, opts);
-            await fs.writeFile(buildPath, content);
-            generatedFiles.push(buildPath);
-        }
-        
-        // Generate release workflow
-        if (opts.generateReleaseWorkflow) {
-            const releasePath = path.join(workflowsDir, 'release.yml');
-            const content = this.generateReleaseWorkflow(grammar, config, opts);
-            await fs.writeFile(releasePath, content);
-            generatedFiles.push(releasePath);
-        }
-        
-        // Generate security workflow
-        if (opts.generateSecurityWorkflow) {
-            const securityPath = path.join(workflowsDir, 'security.yml');
-            const content = this.generateSecurityWorkflow(grammar, config, opts);
-            await fs.writeFile(securityPath, content);
-            generatedFiles.push(securityPath);
-        }
-        
-        // Generate dependency update workflow
-        if (opts.generateDependencyUpdateWorkflow) {
-            const depsPath = path.join(workflowsDir, 'dependencies.yml');
-            const content = this.generateDependencyUpdateWorkflow(grammar, config, opts);
-            await fs.writeFile(depsPath, content);
-            generatedFiles.push(depsPath);
-        }
-        
-        // Generate nightly build workflow
-        if (opts.generateNightlyWorkflow) {
-            const nightlyPath = path.join(workflowsDir, 'nightly.yml');
-            const content = this.generateNightlyWorkflow(grammar, config, opts);
-            await fs.writeFile(nightlyPath, content);
-            generatedFiles.push(nightlyPath);
-        }
-        
-        return generatedFiles;
+
+    // Generate dependency update workflow
+    if (opts.generateDependencyUpdateWorkflow) {
+      const depsPath = path.join(workflowsDir, 'dependencies.yml');
+      const content = this.generateDependencyUpdateWorkflow(grammar, config, opts);
+      await fs.writeFile(depsPath, content);
+      generatedFiles.push(depsPath);
     }
-    
-    private generateBuildWorkflow(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        options: WorkflowGeneratorOptions
-    ): string {
-        const data = {
-            projectName: grammar.projectName,
-            platforms: options.platforms,
-            nodeVersions: options.nodeVersions,
-            includeE2ETests: options.includeE2ETests,
-            includeCoverage: options.includeCoverage,
-            coverageThreshold: options.coverageThreshold,
-            excludeWindows: options.platforms?.includes('windows-latest') && options.nodeVersions?.includes('16.x')
-        };
-        
-        // Generate the template
-        const result = this.buildWorkflowTemplate(data);
-        
-        // Post-process to replace GitHub Actions placeholders
-        return this.restoreGitHubExpressions(result);
+
+    // Generate nightly build workflow
+    if (opts.generateNightlyWorkflow) {
+      const nightlyPath = path.join(workflowsDir, 'nightly.yml');
+      const content = this.generateNightlyWorkflow(grammar, config, opts);
+      await fs.writeFile(nightlyPath, content);
+      generatedFiles.push(nightlyPath);
     }
-    
-    private generateReleaseWorkflow(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        options: WorkflowGeneratorOptions
-    ): string {
-        const data = {
-            projectName: grammar.projectName,
-            publishToNpm: options.publishToNpm,
-            publishToOpenVsx: options.publishToOpenVsx
-        };
-        
-        // Generate the template
-        const result = this.releaseWorkflowTemplate(data);
-        
-        // Post-process to replace GitHub Actions placeholders
-        return this.restoreGitHubExpressions(result);
-    }
-    
-    private generateSecurityWorkflow(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        options: WorkflowGeneratorOptions
-    ): string {
-        // Generate the template
-        const result = this.securityWorkflowTemplate({
-            projectName: grammar.projectName
-        });
-        
-        // Post-process to replace GitHub Actions placeholders
-        return this.restoreGitHubExpressions(result);
-    }
-    
-    private generateDependencyUpdateWorkflow(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        options: WorkflowGeneratorOptions
-    ): string {
-        // Generate the template
-        const result = this.dependencyUpdateTemplate({
-            projectName: grammar.projectName
-        });
-        
-        // Post-process to replace GitHub Actions placeholders
-        return this.restoreGitHubExpressions(result);
-    }
-    
-    private generateNightlyWorkflow(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        options: WorkflowGeneratorOptions
-    ): string {
-        // Generate the template
-        const result = this.nightlyBuildTemplate({
-            projectName: grammar.projectName
-        });
-        
-        // Post-process to replace GitHub Actions placeholders
-        return this.restoreGitHubExpressions(result);
-    }
+
+    return generatedFiles;
+  }
+
+  private generateBuildWorkflow(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    options: WorkflowGeneratorOptions
+  ): string {
+    const data = {
+      projectName: grammar.projectName,
+      platforms: options.platforms,
+      nodeVersions: options.nodeVersions,
+      includeE2ETests: options.includeE2ETests,
+      includeCoverage: options.includeCoverage,
+      coverageThreshold: options.coverageThreshold,
+      excludeWindows: options.platforms?.includes('windows-latest') && options.nodeVersions?.includes('16.x')
+    };
+
+    // Generate the template
+    const result = this.buildWorkflowTemplate(data);
+
+    // Post-process to replace GitHub Actions placeholders
+    return this.restoreGitHubExpressions(result);
+  }
+
+  private generateReleaseWorkflow(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    options: WorkflowGeneratorOptions
+  ): string {
+    const data = {
+      projectName: grammar.projectName,
+      publishToNpm: options.publishToNpm,
+      publishToOpenVsx: options.publishToOpenVsx
+    };
+
+    // Generate the template
+    const result = this.releaseWorkflowTemplate(data);
+
+    // Post-process to replace GitHub Actions placeholders
+    return this.restoreGitHubExpressions(result);
+  }
+
+  private generateSecurityWorkflow(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    _options: WorkflowGeneratorOptions
+  ): string {
+    // Generate the template
+    const result = this.securityWorkflowTemplate({
+      projectName: grammar.projectName
+    });
+
+    // Post-process to replace GitHub Actions placeholders
+    return this.restoreGitHubExpressions(result);
+  }
+
+  private generateDependencyUpdateWorkflow(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    _options: WorkflowGeneratorOptions
+  ): string {
+    // Generate the template
+    const result = this.dependencyUpdateTemplate({
+      projectName: grammar.projectName
+    });
+
+    // Post-process to replace GitHub Actions placeholders
+    return this.restoreGitHubExpressions(result);
+  }
+
+  private generateNightlyWorkflow(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    _options: WorkflowGeneratorOptions
+  ): string {
+    // Generate the template
+    const result = this.nightlyBuildTemplate({
+      projectName: grammar.projectName
+    });
+
+    // Post-process to replace GitHub Actions placeholders
+    return this.restoreGitHubExpressions(result);
+  }
 }

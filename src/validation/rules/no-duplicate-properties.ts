@@ -15,7 +15,7 @@ export class NoDuplicatePropertiesRule implements LinterRule {
             ast.rules.forEach((rule: any) => {
                 if (rule.$type === 'Interface' && rule.features) {
                     const propertyNames = new Map<string, any[]>();
-                    
+
                     // Collect all property names
                     rule.features.forEach((feature: any) => {
                         if (feature.name) {
@@ -30,10 +30,10 @@ export class NoDuplicatePropertiesRule implements LinterRule {
                     propertyNames.forEach((occurrences, propertyName) => {
                         if (occurrences.length > 1) {
                             // Report all occurrences except the first
-                            occurrences.slice(1).forEach((duplicate, index) => {
+                            occurrences.slice(1).forEach((duplicate, _index) => {
                                 const location = this.getLocation(duplicate, propertyName, lines);
                                 const firstLocation = this.getLocation(occurrences[0], propertyName, lines);
-                                
+
                                 diagnostics.push(createDiagnostic(
                                     'error',
                                     'GLSP003',
@@ -69,15 +69,15 @@ export class NoDuplicatePropertiesRule implements LinterRule {
         return diagnostics;
     }
 
-    private getLocation(node: any, propertyName: string, lines: string[]): { line: number; column: number } {
+    private getLocation(_node: any, propertyName: string, lines: string[]): { line: number; column: number } {
         // Find the line containing the property
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const match = line.match(new RegExp(`\\b${propertyName}\\s*:`));
             if (match) {
-                return { 
-                    line: i + 1, 
-                    column: match.index! + 1 
+                return {
+                    line: i + 1,
+                    column: match.index! + 1
                 };
             }
         }

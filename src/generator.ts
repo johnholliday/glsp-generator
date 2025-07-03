@@ -1,64 +1,70 @@
 import fs from 'fs-extra';
 import path from 'path';
 import Handlebars from 'handlebars';
-import { LangiumGrammarParser } from './utils/langium-parser.js';
-import { IGrammarParser } from './types/parser-interface.js';
-import { GenerationContext, TemplateData, ParsedGrammar } from './types/grammar.js';
+import { GenerationContext, ParsedGrammar } from './types/grammar.js';
 import chalk from 'chalk';
 import { GLSPConfig } from './config/types.js';
 import { DEFAULT_CONFIG } from './config/default-config.js';
-import { GrammarLinter } from './validation/linter.js';
-import { ValidationReporter } from './validation/reporter.js';
 import { ValidationResult } from './validation/types.js';
-import { getTemplatesDir } from './utils/paths.js';
-import { DocumentationGenerator } from './documentation/documentation-generator.js';
 import { DocumentationOptions } from './documentation/types.js';
-import { TypeSafetyGenerator, TypeSafetyOptions } from './type-safety/index.js';
-import { TestGenerator, TestGeneratorOptions } from './test-generation/index.js';
-import { CICDGenerator, CICDGeneratorOptions } from './cicd/index.js';
-import { TemplateSystem, TemplateResolver, TemplateOptions } from './templates/index.js';
-import { PerformanceOptimizer, PerformanceConfig } from './performance/index.js';
+import { TypeSafetyOptions } from './type-safety/index.js';
+import { TestGeneratorOptions } from './test-generation/index.js';
+import { CICDGeneratorOptions } from './cicd/index.js';
+import { TemplateResolver, TemplateOptions } from './templates/index.js';
+import { PerformanceConfig } from './performance/index.js';
 import { parseGrammarToAST } from './performance/grammar-converter.js';
+import { injectable, inject } from 'inversify';
+import { TYPES } from './config/di/types.inversify.js';
+import {
+  IGrammarParserService,
+  ILinterService,
+  IDocumentationGeneratorService,
+  IValidationReporterService,
+  ICICDGeneratorService,
+  ITemplateSystemService,
+  IPerformanceOptimizerService,
+  ITypeSafetyGeneratorService,
+  ITestGeneratorService
+} from './config/di/interfaces.js';
+import { ILogger } from './utils/logger/index.js';
+import { LogMethod } from './utils/decorators/log-method.js';
 
+@injectable()
 export class GLSPGenerator {
-  private parser: IGrammarParser;
-  private templates: Map<string, HandlebarsTemplateDelegate> = new Map();
   private config: GLSPConfig;
-  private linter: GrammarLinter;
-  private reporter: ValidationReporter;
-  private documentationGenerator: DocumentationGenerator;
-  private typeSafetyGenerator: TypeSafetyGenerator;
-  private testGenerator: TestGenerator;
-  private cicdGenerator: CICDGenerator;
-  private templateSystem: TemplateSystem;
   private templateResolver?: TemplateResolver;
-  private performanceOptimizer: PerformanceOptimizer;
 
-  constructor(config?: GLSPConfig, parser?: IGrammarParser) {
-    this.parser = parser || new LangiumGrammarParser();
-    this.config = config || DEFAULT_CONFIG;
-    this.linter = new GrammarLinter(this.config.linter);
-    this.reporter = new ValidationReporter();
-    this.documentationGenerator = new DocumentationGenerator();
-    this.typeSafetyGenerator = new TypeSafetyGenerator();
-    this.testGenerator = new TestGenerator();
-    this.cicdGenerator = new CICDGenerator();
-    this.templateSystem = new TemplateSystem();
+  constructor(
+    @inject(TYPES.ILoggerService) private logger: ILogger,
+    @inject(TYPES.IGrammarParserService) private parser: IGrammarParserService,
+    @inject(TYPES.ILinterService) private linter: ILinterService,
+    @inject(TYPES.IValidationReporterService) private reporter: IValidationReporterService,
+    @inject(TYPES.IDocumentationGeneratorService) private documentationGenerator: IDocumentationGeneratorService,
+    @inject(TYPES.ITypeSafetyGeneratorService) private typeSafetyGenerator: ITypeSafetyGeneratorService,
+    @inject(TYPES.ITestGeneratorService) private testGenerator: ITestGeneratorService,
+    @inject(TYPES.ICICDGeneratorService) private cicdGenerator: ICICDGeneratorService,
+    @inject(TYPES.ITemplateSystemService) private templateSystem: ITemplateSystemService,
+    @inject(TYPES.IPerformanceOptimizerService) private performanceOptimizer: IPerformanceOptimizerService
+  ) {
+    this.config = DEFAULT_CONFIG;
+    this.registerHandlebarsHelpers();
+    this.logger.info('GLSPGenerator initialized');
 
     // Initialize performance optimizations (disabled in test environment)
-    const isTestEnvironment = this.isTestEnvironment();
-    const perfConfig: PerformanceConfig = {
-      enableCaching: !isTestEnvironment,
-      enableParallelProcessing: !isTestEnvironment,
-      enableStreaming: !isTestEnvironment,
-      enableProgressIndicators: !isTestEnvironment,
-      enableMemoryMonitoring: !isTestEnvironment,
-      gcHints: !isTestEnvironment,
-      profileMode: false
-    };
-    this.performanceOptimizer = new PerformanceOptimizer(perfConfig);
+    // const _isTestEnvironment = this.isTestEnvironment();
+    // const _perfConfig: PerformanceConfig = {
+    //   enableCaching: !isTestEnvironment,
+    //   enableParallelProcessing: !isTestEnvironment,
+    //   enableStreaming: !isTestEnvironment,
+    //   enableProgressIndicators: !isTestEnvironment,
+    //   enableMemoryMonitoring: !isTestEnvironment,
+    //   gcHints: !isTestEnvironment,
+    //   profileMode: false
+    // };
+    // Performance optimizer is injected, just configure it
+    // this.performanceOptimizer = new PerformanceOptimizer(perfConfig);
 
-    this.registerHandlebarsHelpers();
+    // this.registerHandlebarsHelpers(); // Already called above
   }
 
   /**
@@ -73,6 +79,7 @@ export class GLSPGenerator {
     );
   }
 
+  @LogMethod({ logResult: false, maxArgLength: 300 })
   async generateExtension(
     grammarFile: string,
     outputDir: string = '.',
@@ -89,6 +96,15 @@ export class GLSPGenerator {
       performanceOptions?: PerformanceConfig;
     }
   ): Promise<{ extensionDir: string }> {
+    const sessionId = crypto.randomUUID();
+    const sessionLogger = this.logger.child({
+      sessionId,
+      grammarFile,
+      outputDir
+    });
+
+    sessionLogger.info('Starting GLSP extension generation', { options });
+
     // Start performance monitoring
     this.performanceOptimizer.startMonitoring();
     const progress = this.performanceOptimizer.getProgress();
@@ -112,7 +128,7 @@ export class GLSPGenerator {
         shouldOptimize = this.performanceOptimizer.shouldOptimize(stats.size);
 
         if (shouldOptimize) {
-          console.log(chalk.blue('🚀 Large grammar detected, enabling optimizations...'));
+          sessionLogger.warn(chalk.blue('🚀 Large grammar detected, enabling optimizations...'));
         }
       } catch (error) {
         // File doesn't exist - this is okay in test environment with mock parser
@@ -125,7 +141,7 @@ export class GLSPGenerator {
 
       // Phase 1: Parse grammar
       progress?.startPhase('Parsing');
-      console.log(chalk.blue('🔄 Parsing grammar file...'));
+      this.logger.info(chalk.blue('🔄 Parsing grammar file...'));
 
       let grammar;
       if (shouldOptimize && stats && stats.size > 1024 * 1024) { // > 1MB
@@ -199,7 +215,7 @@ export class GLSPGenerator {
             cacheManager.cacheGrammar(grammarFile, grammar);
           }
         } else {
-          console.log(chalk.gray('📦 Using cached grammar'));
+          sessionLogger.info(chalk.gray('📦 Using cached grammar'));
         }
       }
 
@@ -245,16 +261,16 @@ export class GLSPGenerator {
 
       // Phase 2: Setup
       progress?.startPhase('Setup');
-      console.log(chalk.blue('📁 Creating project structure...'));
+      sessionLogger.info(chalk.blue('📁 Creating project structure...'));
       await this.createProjectStructure(extensionDir);
 
-      console.log(chalk.blue('📝 Loading templates...'));
+      sessionLogger.info(chalk.blue('📝 Loading templates...'));
       this.templateResolver = await this.templateSystem.initialize(options?.templateOptions);
       progress?.completePhase('Project structure ready');
 
       // Phase 3: Generation
       progress?.startPhase('Generation');
-      console.log(chalk.blue('⚡ Generating files...'));
+      sessionLogger.info(chalk.blue('⚡ Generating files...'));
       await this.generateFiles(context, extensionDir, shouldOptimize);
       progress?.completePhase(`Generated files in ${extensionDir}`);
 
@@ -287,15 +303,15 @@ export class GLSPGenerator {
 
       progress?.complete();
 
-      console.log(chalk.green('✅ Extension generated successfully!'));
-      console.log(chalk.yellow(`📍 Location: ${extensionDir}`));
-      console.log(chalk.cyan(`📊 Generated ${parsedGrammar.interfaces?.length || 0} interfaces and ${parsedGrammar.types?.length || 0} types`));
+      sessionLogger.info(chalk.green('✅ Extension generated successfully!'));
+      sessionLogger.info(chalk.yellow(`📍 Location: ${extensionDir}`));
+      sessionLogger.info(chalk.cyan(`📊 Generated ${parsedGrammar.interfaces?.length || 0} interfaces and ${parsedGrammar.types?.length || 0} types`));
 
       // Show performance recommendations if optimizations are enabled
       const recommendations = this.performanceOptimizer.getOptimizationRecommendations();
       if (recommendations && recommendations.length > 0) {
-        console.log(chalk.blue('\n💡 Performance Recommendations:'));
-        recommendations.forEach(rec => console.log(chalk.gray(`  • ${rec}`)));
+        sessionLogger.info(chalk.blue('\n💡 Performance Recommendations:'));
+        recommendations.forEach(rec => sessionLogger.info(chalk.gray(`  • ${rec}`)));
       }
 
     } catch (error) {
@@ -306,7 +322,7 @@ export class GLSPGenerator {
     } finally {
       // Stop monitoring and generate performance report
       await this.performanceOptimizer.stopMonitoring();
-      
+
       // Force cleanup of any remaining resources
       if (global.gc) {
         global.gc();
@@ -336,19 +352,19 @@ export class GLSPGenerator {
     }
   }
 
-  private async loadTemplates(): Promise<void> {
-    // Templates are relative to this file's location
-    const templateDir = getTemplatesDir();
-    const templateFiles = await fs.readdir(templateDir);
+  // private async loadTemplates(): Promise<void> {
+  //   // Templates are relative to this file's location
+  //   const templateDir = getTemplatesDir();
+  //   const templateFiles = await fs.readdir(templateDir);
 
-    for (const file of templateFiles) {
-      if (file.endsWith('.hbs')) {
-        const templateName = path.basename(file, '.hbs');
-        const templateContent = await fs.readFile(path.join(templateDir, file), 'utf-8');
-        this.templates.set(templateName, Handlebars.compile(templateContent));
-      }
-    }
-  }
+  //   for (const file of templateFiles) {
+  //     if (file.endsWith('.hbs')) {
+  //       const templateName = path.basename(file, '.hbs');
+  //       const templateContent = await fs.readFile(path.join(templateDir, file), 'utf-8');
+  //       this.templates.set(templateName, Handlebars.compile(templateContent));
+  //     }
+  //   }
+  // }
 
   private async generateFiles(context: GenerationContext, extensionDir: string, useOptimizations = false): Promise<void> {
     if (!this.templateResolver) {
@@ -407,10 +423,10 @@ export class GLSPGenerator {
         await fs.ensureDir(path.dirname(outputPath));
         await fs.writeFile(outputPath, content);
 
-        console.log(chalk.green(`✓ Generated ${item.outputPath}`));
+        this.logger.info(chalk.green(`✓ Generated ${item.outputPath}`));
         progress?.updateProgress(++completed, generationItems.length, item.outputPath);
       } catch (error) {
-        console.error(chalk.red(`✗ Failed to generate ${item.outputPath}: ${error}`));
+        this.logger.error(chalk.red(`✗ Failed to generate ${item.outputPath}: ${error}`));
       }
     }
   }
@@ -421,7 +437,7 @@ export class GLSPGenerator {
     extensionDir: string,
     progress: any
   ): Promise<void> {
-    console.log(chalk.blue('⚡ Using parallel processing for template generation'));
+    this.logger.info(chalk.blue('⚡ Using parallel processing for template generation'));
 
     const parallelProcessor = this.performanceOptimizer.getParallelProcessor();
 
@@ -449,11 +465,11 @@ export class GLSPGenerator {
         await fs.ensureDir(path.dirname(outputPath));
         await fs.writeFile(outputPath, result.content);
 
-        console.log(chalk.green(`✓ Generated ${result.outputPath} (${result.duration.toFixed(1)}ms)`));
+        this.logger.info(chalk.green(`✓ Generated ${result.outputPath} (${result.duration.toFixed(1)}ms)`));
         progress?.updateProgress(++completed, results.length, result.outputPath);
       }
     } catch (error) {
-      console.error(chalk.red('✗ Parallel processing failed, falling back to sequential'));
+      this.logger.error(chalk.red('✗ Parallel processing failed, falling back to sequential'));
       await this.generateFilesSequential(generationItems, templateContext, extensionDir, progress);
     }
   }
@@ -512,10 +528,10 @@ export class GLSPGenerator {
     Handlebars.registerHelper('formatDate', (dateString: string) => {
       if (!dateString) return '';
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     });
 
@@ -554,7 +570,7 @@ export class GLSPGenerator {
     try {
       ast = await this.parser.parseGrammar(grammarContent);
     } catch (error) {
-      console.error(chalk.red(`Failed to parse grammar: ${error}`));
+      this.logger.error(chalk.red(`Failed to parse grammar: ${error}`));
       return false;
     }
 
@@ -563,16 +579,16 @@ export class GLSPGenerator {
 
     // Display results
     const formatted = this.linter.formatResults(result, grammarFile, grammarContent.split('\n'));
-    console.log(formatted);
+    this.logger.info(formatted);
 
     // Generate report if requested
     if (options?.generateReport && options.reportPath) {
       if (options.reportFormat === 'html') {
         await this.reporter.generateHtmlReport(result, grammarFile, options.reportPath);
-        console.log(chalk.blue(`📄 HTML report generated: ${options.reportPath}`));
+        this.logger.info(chalk.blue(`📄 HTML report generated: ${options.reportPath}`));
       } else {
         await this.reporter.generateMarkdownReport(result, grammarFile, options.reportPath);
-        console.log(chalk.blue(`📄 Markdown report generated: ${options.reportPath}`));
+        this.logger.info(chalk.blue(`📄 Markdown report generated: ${options.reportPath}`));
       }
     }
 
@@ -590,7 +606,7 @@ export class GLSPGenerator {
     outputDir: string = '.',
     options?: DocumentationOptions
   ): Promise<void> {
-    console.log(chalk.blue('📚 Generating documentation...'));
+    this.logger.info(chalk.blue('📚 Generating documentation...'));
 
     // Parse grammar
     const grammar = await this.parser.parseGrammarFile(grammarFile);
@@ -604,11 +620,11 @@ export class GLSPGenerator {
     );
 
     if (result.success) {
-      console.log(chalk.green('✅ Documentation generated successfully!'));
-      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+      this.logger.info(chalk.green('✅ Documentation generated successfully!'));
+      this.logger.info(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
-      console.error(chalk.red('❌ Some documentation generation failed:'));
-      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+      this.logger.error(chalk.red('❌ Some documentation generation failed:'));
+      result.errors?.forEach(error => this.logger.error(chalk.red(`   - ${error}`)));
     }
   }
 
@@ -617,7 +633,7 @@ export class GLSPGenerator {
     outputDir: string = '.',
     options?: TypeSafetyOptions
   ): Promise<void> {
-    console.log(chalk.blue('🔒 Generating type safety features...'));
+    this.logger.info(chalk.blue('🔒 Generating type safety features...'));
 
     // Parse grammar
     const grammar = await this.parser.parseGrammarFile(grammarFile);
@@ -631,11 +647,11 @@ export class GLSPGenerator {
     );
 
     if (result.success) {
-      console.log(chalk.green('✅ Type safety features generated successfully!'));
-      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+      this.logger.info(chalk.green('✅ Type safety features generated successfully!'));
+      this.logger.info(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
-      console.error(chalk.red('❌ Some type safety generation failed:'));
-      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+      this.logger.error(chalk.red('❌ Some type safety generation failed:'));
+      result.errors?.forEach(error => this.logger.error(chalk.red(`   - ${error}`)));
     }
   }
 
@@ -644,7 +660,7 @@ export class GLSPGenerator {
     outputDir: string = '.',
     options?: TestGeneratorOptions
   ): Promise<void> {
-    console.log(chalk.blue('🧪 Generating test infrastructure...'));
+    this.logger.info(chalk.blue('🧪 Generating test infrastructure...'));
 
     // Parse grammar
     const grammar = await this.parser.parseGrammarFile(grammarFile);
@@ -658,11 +674,11 @@ export class GLSPGenerator {
     );
 
     if (result.success) {
-      console.log(chalk.green('✅ Test infrastructure generated successfully!'));
-      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+      this.logger.info(chalk.green('✅ Test infrastructure generated successfully!'));
+      this.logger.info(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
-      console.error(chalk.red('❌ Some test generation failed:'));
-      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+      this.logger.error(chalk.red('❌ Some test generation failed:'));
+      result.errors?.forEach(error => this.logger.error(chalk.red(`   - ${error}`)));
     }
   }
 
@@ -671,7 +687,7 @@ export class GLSPGenerator {
     outputDir: string = '.',
     options?: CICDGeneratorOptions
   ): Promise<void> {
-    console.log(chalk.blue('🚀 Generating CI/CD configuration...'));
+    this.logger.info(chalk.blue('🚀 Generating CI/CD configuration...'));
 
     // Parse grammar
     const grammar = await this.parser.parseGrammarFile(grammarFile);
@@ -685,11 +701,11 @@ export class GLSPGenerator {
     );
 
     if (result.success) {
-      console.log(chalk.green('✅ CI/CD configuration generated successfully!'));
-      console.log(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
+      this.logger.info(chalk.green('✅ CI/CD configuration generated successfully!'));
+      this.logger.info(chalk.gray(`   Files generated: ${result.filesGenerated.length}`));
     } else {
-      console.error(chalk.red('❌ Some CI/CD generation failed:'));
-      result.errors?.forEach(error => console.error(chalk.red(`   - ${error}`)));
+      this.logger.error(chalk.red('❌ Some CI/CD generation failed:'));
+      result.errors?.forEach(error => this.logger.error(chalk.red(`   - ${error}`)));
     }
   }
   /**

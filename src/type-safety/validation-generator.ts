@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarProperty } from '../types/grammar.js';
+import { ParsedGrammar, GrammarInterface } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface ValidationGeneratorOptions {
@@ -23,12 +23,12 @@ export interface ValidationResult<T> {
 
 export class ValidationGenerator {
     private template!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplate();
         this.registerHelpers();
     }
-    
+
     private loadTemplate(): void {
         const templateContent = `/**
  * Runtime validation functions for {{projectName}}
@@ -221,20 +221,20 @@ if (obj.{{name}} && typeof obj.{{name}} === 'string') {
 
         this.template = Handlebars.compile(templateContent, { noEscape: true });
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
-        
+
         Handlebars.registerHelper('concat', (...args: any[]) => {
             args.pop(); // Remove Handlebars options
             return args.join('');
         });
-        
+
         Handlebars.registerHelper('isReference', (type: string) => {
             return type.endsWith('Id') || type.endsWith('Reference') || type.endsWith('Ref');
         });
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -246,23 +246,23 @@ if (obj.{{name}} && typeof obj.{{name}} === 'string') {
             validateReferences: true,
             ...options
         };
-        
+
         const typesDir = path.join(outputDir, 'src', 'types');
         await fs.ensureDir(typesDir);
-        
+
         // Prepare template data
         const data = {
             projectName: grammar.projectName,
             interfaces: this.prepareInterfaces(grammar.interfaces),
             ...opts
         };
-        
+
         // Generate validators file
         const content = this.template(data);
         const outputPath = path.join(typesDir, `${grammar.projectName}-validators.ts`);
         await fs.writeFile(outputPath, content);
     }
-    
+
     private prepareInterfaces(interfaces: GrammarInterface[]): any[] {
         return interfaces.map(iface => ({
             ...iface,
@@ -274,7 +274,7 @@ if (obj.{{name}} && typeof obj.{{name}} === 'string') {
             }))
         }));
     }
-    
+
     private mapType(type: string): string {
         const primitiveTypes = ['string', 'number', 'boolean', 'ID'];
         return primitiveTypes.includes(type) ? type : type;

@@ -1,17 +1,6 @@
-import { AstNode } from 'langium';
-import { GLSPConfig } from '../config/types.js';
-
-export interface ParsedGrammar {
-  interfaces: GrammarInterface[];
-  types: GrammarType[];
-  projectName: string;
-}
-
-export interface GrammarInterface {
-  name: string;
-  properties: GrammarProperty[];
-  superTypes: string[];
-}
+/**
+ * Grammar type definitions for the GLSP generator
+ */
 
 export interface GrammarProperty {
   name: string;
@@ -20,28 +9,32 @@ export interface GrammarProperty {
   array: boolean;
 }
 
+export interface GrammarInterface {
+  name: string;
+  properties: GrammarProperty[];
+  superTypes: string[];
+}
+
 export interface GrammarType {
   name: string;
   definition: string;
   unionTypes?: string[];
 }
 
+export interface ParsedGrammar {
+  interfaces: GrammarInterface[];
+  types: GrammarType[];
+  projectName: string;
+}
+
 export interface GenerationContext {
   projectName: string;
   grammar: ParsedGrammar;
   outputDir: string;
-  config: GLSPConfig;
+  config: any; // GLSPConfig type
 }
 
-export interface TemplateData {
-  projectName: string;
-  interfaces: GrammarInterface[];
-  types: GrammarType[];
-  config: GLSPConfig;
-  [key: string]: any;
-}
-
-// Additional interfaces for performance optimizations
+// Additional types needed by other modules
 export interface GrammarAST {
   projectName: string;
   grammarName: string;
@@ -49,23 +42,32 @@ export interface GrammarAST {
   interfaces: GrammarInterface[];
   types: GrammarType[];
   imports: string[];
-  metadata?: {
+  metadata: {
     ruleCount: number;
     interfaceCount: number;
     parseTime: number;
-    [key: string]: any;
+    typeCount: number;
+    hasComplexTypes: boolean;
+    hasCircularReferences: boolean;
+    optimized?: boolean;
+    optimizationTime?: number;
   };
 }
 
 export interface ParsedRule {
   name: string;
-  definition: string;
-  type: string;
-  properties: string[];
+  type: 'interface' | 'type' | 'union';
+  properties: GrammarProperty[];
+  extends?: string[];
+  documentation?: string;
+  definition?: string;
   references: string[];
 }
 
-// Type aliases for backward compatibility
-export type ParsedInterface = GrammarInterface;
-export type ParsedType = GrammarType;
-export type ParsedProperty = GrammarProperty;
+export interface ParsedInterface extends GrammarInterface {
+  // Alias for compatibility
+}
+
+export interface ParsedType extends GrammarType {
+  // Alias for compatibility
+}

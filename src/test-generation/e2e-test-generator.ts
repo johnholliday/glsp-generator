@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ParsedGrammar, GrammarInterface } from '../types/grammar.js';
+import { ParsedGrammar } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface E2ETestGeneratorOptions {
@@ -16,12 +16,12 @@ export class E2ETestGenerator {
     private diagramEditingTemplate!: HandlebarsTemplateDelegate;
     private modelPersistenceTemplate!: HandlebarsTemplateDelegate;
     private keyboardShortcutsTemplate!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplates();
         this.registerHelpers();
     }
-    
+
     private loadTemplates(): void {
         this.basicOperationsTemplate = Handlebars.compile(`import { test, expect } from '@playwright/test';
 import { {{projectName}}Page } from '../page-objects/{{projectName}}-page';
@@ -745,17 +745,17 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
 });
 `);
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('camelCase', (str: string) => {
             return str.charAt(0).toLowerCase() + str.slice(1);
         });
-        
+
         Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
-        
+
         Handlebars.registerHelper('add', (a: number, b: number) => a + b);
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -769,20 +769,20 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
             headless: true,
             ...options
         };
-        
+
         const generatedFiles: string[] = [];
-        
+
         // Create test directories
         const e2eTestDir = path.join(outputDir, 'src', 'test', 'e2e');
         const pageObjectsDir = path.join(e2eTestDir, 'page-objects');
-        
+
         await fs.ensureDir(e2eTestDir);
         await fs.ensureDir(pageObjectsDir);
-        
+
         // Generate page object
         await this.generatePageObject(grammar, pageObjectsDir);
         generatedFiles.push(path.join(pageObjectsDir, `${grammar.projectName}-page.ts`));
-        
+
         // Generate basic operations tests
         if (opts.generateBasicTests) {
             const testPath = path.join(e2eTestDir, 'basic-operations.test.ts');
@@ -790,7 +790,7 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         // Generate diagram editing tests
         if (opts.generateDiagramTests) {
             const testPath = path.join(e2eTestDir, 'diagram-editing.test.ts');
@@ -798,7 +798,7 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         // Generate model persistence tests
         if (opts.generateModelPersistenceTests) {
             const testPath = path.join(e2eTestDir, 'model-persistence.test.ts');
@@ -806,7 +806,7 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         // Generate keyboard shortcut tests
         if (opts.generateKeyboardShortcutTests) {
             const testPath = path.join(e2eTestDir, 'keyboard-shortcuts.test.ts');
@@ -814,10 +814,10 @@ test.describe('{{projectName}} Keyboard Shortcuts', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         return generatedFiles;
     }
-    
+
     private async generatePageObject(grammar: ParsedGrammar, pageObjectsDir: string): Promise<void> {
         const pageObjectTemplate = Handlebars.compile(`import { Page, Locator } from '@playwright/test';
 
@@ -957,17 +957,17 @@ export class {{projectName}}Page {
     // Additional helper methods...
 }
 `);
-        
+
         const content = pageObjectTemplate({
             projectName: grammar.projectName
         });
-        
+
         await fs.writeFile(
             path.join(pageObjectsDir, `${grammar.projectName}-page.ts`),
             content
         );
     }
-    
+
     private generateBasicOperationsTest(grammar: ParsedGrammar): string {
         return this.basicOperationsTemplate({
             projectName: grammar.projectName,
@@ -975,13 +975,13 @@ export class {{projectName}}Page {
             firstInterface: grammar.interfaces[0]?.name || 'Node'
         });
     }
-    
+
     private generateDiagramEditingTest(grammar: ParsedGrammar): string {
-        const hasConnections = grammar.interfaces.some(i => 
-            i.name.toLowerCase().includes('edge') || 
+        const hasConnections = grammar.interfaces.some(i =>
+            i.name.toLowerCase().includes('edge') ||
             i.name.toLowerCase().includes('connection')
         );
-        
+
         return this.diagramEditingTemplate({
             projectName: grammar.projectName,
             interfaces: grammar.interfaces,
@@ -990,13 +990,13 @@ export class {{projectName}}Page {
             hasConnections
         });
     }
-    
+
     private generateModelPersistenceTest(grammar: ParsedGrammar): string {
-        const hasConnections = grammar.interfaces.some(i => 
-            i.name.toLowerCase().includes('edge') || 
+        const hasConnections = grammar.interfaces.some(i =>
+            i.name.toLowerCase().includes('edge') ||
             i.name.toLowerCase().includes('connection')
         );
-        
+
         return this.modelPersistenceTemplate({
             projectName: grammar.projectName,
             interfaces: grammar.interfaces,
@@ -1004,7 +1004,7 @@ export class {{projectName}}Page {
             hasConnections
         });
     }
-    
+
     private generateKeyboardShortcutsTest(grammar: ParsedGrammar): string {
         return this.keyboardShortcutsTemplate({
             projectName: grammar.projectName,

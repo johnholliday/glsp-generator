@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ParsedGrammar, ParsedInterface, ParsedType } from '../types/grammar.js';
+import { ParsedGrammar } from '../types/grammar.js';
 
 export interface ExampleGeneratorOptions {
     complexity?: 'basic' | 'intermediate' | 'advanced';
@@ -9,7 +9,7 @@ export interface ExampleGeneratorOptions {
 }
 
 export class ExampleModelGenerator {
-    async generate(grammar: ParsedGrammar, outputDir: string, options?: ExampleGeneratorOptions): Promise<void> {
+    async generate(grammar: ParsedGrammar, outputDir: string, _options?: ExampleGeneratorOptions): Promise<void> {
         const examplesDir = path.join(outputDir, 'docs', 'examples');
         await fs.ensureDir(examplesDir);
 
@@ -176,7 +176,7 @@ export class ExampleModelGenerator {
         const elements = new Map<string, string[]>();
 
         // Generate instances for all interfaces
-        grammar.interfaces.forEach((iface, ifaceIndex) => {
+        grammar.interfaces.forEach((iface, _ifaceIndex) => {
             const instances = [];
 
             // Create 2-3 instances of each interface

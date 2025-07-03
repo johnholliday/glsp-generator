@@ -8,12 +8,18 @@ export * from './monitor.js';
 export * from './memory-manager.js';
 export * from './grammar-converter.js';
 
+// Export new DI-enabled interfaces and services
+export * from './interfaces/index.js';
+export * from './services/index.js';
+export * from './factories/memory-manager.factory.js';
+
 import { StreamingGrammarParser } from './streaming-parser.js';
 import { ParallelTemplateProcessor } from './parallel-processor.js';
 import { AdvancedCacheManager } from './cache-manager.js';
 import { GenerationProgress } from './progress-indicator.js';
 import { PerformanceMonitor } from './monitor.js';
 import { MemoryManager } from './memory-manager.js';
+import { createMemoryManager } from './factories/memory-manager.factory.js';
 import { PerformanceConfig } from './types.js';
 import os from 'os';
 
@@ -28,9 +34,12 @@ export class PerformanceOptimizer {
     private streamingParser?: StreamingGrammarParser;
     private parallelProcessor?: ParallelTemplateProcessor;
 
-    constructor(private config: PerformanceConfig = {}) {
+    constructor(
+        private config: PerformanceConfig = {},
+        memoryManager?: MemoryManager
+    ) {
         this.monitor = new PerformanceMonitor(config);
-        this.memoryManager = new MemoryManager(config, this.monitor);
+        this.memoryManager = memoryManager || createMemoryManager(config, this.monitor);
         this.cacheManager = new AdvancedCacheManager({}, config, this.monitor);
         this.progress = new GenerationProgress([], {}, config);
 

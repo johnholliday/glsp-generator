@@ -1,4 +1,4 @@
-import chalk, { type ChalkInstance } from 'chalk';
+import chalk /* , { type ChalkInstance } */ from 'chalk';
 import { Diagnostic, DiagnosticSeverity, Location } from './types.js';
 
 export class DiagnosticFormatter {

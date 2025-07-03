@@ -85,7 +85,7 @@ export interface ResourcePool<T> {
     destroy(): Promise<void>;
 }
 
-export interface WorkerTask<T, R> {
+export interface WorkerTask<T, _R> {
     id: string;
     data: T;
     timeout?: number;

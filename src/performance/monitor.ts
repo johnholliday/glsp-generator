@@ -1,5 +1,4 @@
 import fs from 'fs-extra';
-import * as path from 'path';
 import * as os from 'os';
 import {
     Metric,
@@ -105,7 +104,7 @@ export class PerformanceMonitor {
     /**
      * Record a custom metric
      */
-    recordMetric(name: string, value: number, unit = 'ms'): void {
+    recordMetric(name: string, value: number, _unit = 'ms'): void {
         const existing = this.metrics.get(name);
         if (existing) {
             // Update existing metric (average)

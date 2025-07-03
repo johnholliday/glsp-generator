@@ -12,6 +12,8 @@ describe('TypeSafetyGenerator', () => {
   const outputDir = path.join(process.cwd(), 'test-output-type-safety');
 
   beforeEach(async () => {
+    // Ensure clean state
+    await fs.remove(outputDir);
     generator = new TypeSafetyGenerator();
 
     testGrammar = {
@@ -106,7 +108,21 @@ describe('TypeSafetyGenerator', () => {
   });
 
   afterEach(async () => {
-    await fs.remove(outputDir);
+    try {
+      // Reset permissions if they were changed
+      if (await fs.pathExists(outputDir)) {
+        // On non-Windows, ensure we can delete the directory
+        if (process.platform !== 'win32') {
+          const readOnlyDir = path.join(outputDir, 'src', 'types');
+          if (await fs.pathExists(readOnlyDir)) {
+            await fs.chmod(readOnlyDir, 0o755);
+          }
+        }
+        await fs.remove(outputDir);
+      }
+    } catch (error) {
+      // Ignore cleanup errors
+    }
 
     // Clean up any event listeners to prevent memory leaks
     if (process.listenerCount('unhandledRejection') > 10) {

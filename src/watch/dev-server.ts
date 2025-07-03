@@ -25,36 +25,36 @@ export class DevServer {
             try {
                 // Create HTTP server
                 this.server = createServer(this.app);
-                
+
                 // Create WebSocket server for live reload
                 this.wss = new WebSocketServer({ server: this.server });
-                
+
                 this.wss.on('connection', (ws) => {
                     this.clients.add(ws);
-                    
+
                     // Send current status
                     if (this.lastError) {
                         ws.send(JSON.stringify({ type: 'error', message: this.lastError }));
                     } else {
                         ws.send(JSON.stringify({ type: 'connected' }));
                     }
-                    
+
                     ws.on('close', () => {
                         this.clients.delete(ws);
                     });
-                    
+
                     ws.on('error', (error) => {
                         console.error('WebSocket error:', error);
                         this.clients.delete(ws);
                     });
                 });
-                
+
                 // Start server
                 this.server.listen(this.port, () => {
                     console.log(chalk.green(`✅ Development server started on port ${this.port}`));
                     resolve();
                 });
-                
+
                 this.server.on('error', (error: any) => {
                     if (error.code === 'EADDRINUSE') {
                         console.error(chalk.red(`❌ Port ${this.port} is already in use`));
@@ -63,7 +63,7 @@ export class DevServer {
                     }
                     reject(error);
                 });
-                
+
             } catch (error) {
                 reject(error);
             }
@@ -76,12 +76,12 @@ export class DevServer {
             client.close();
         });
         this.clients.clear();
-        
+
         // Close WebSocket server
         if (this.wss) {
             this.wss.close();
         }
-        
+
         // Close HTTP server
         if (this.server) {
             return new Promise((resolve) => {
@@ -115,45 +115,45 @@ export class DevServer {
     private setupMiddleware(): void {
         // Serve static files from the output directory
         this.app.use(express.static(this.rootDir));
-        
+
         // Inject live reload script
         this.app.use((req, res, next) => {
             if (req.path.endsWith('.html')) {
                 const filePath = path.join(this.rootDir, req.path);
-                
+
                 fs.readFile(filePath, 'utf-8', (err, content) => {
                     if (err) {
                         next();
                         return;
                     }
-                    
+
                     // Inject live reload script before </body>
                     const script = this.getLiveReloadScript();
                     const modifiedContent = content.replace('</body>', `${script}</body>`);
-                    
+
                     res.type('html').send(modifiedContent);
                 });
             } else {
                 next();
             }
         });
-        
+
         // Error overlay endpoint
-        this.app.get('/__dev-server/overlay.js', (req, res) => {
+        this.app.get('/__dev-server/overlay.js', (_req, res) => {
             res.type('application/javascript').send(this.getErrorOverlayScript());
         });
-        
+
         // Health check
-        this.app.get('/__dev-server/health', (req, res) => {
-            res.json({ 
-                status: 'ok', 
+        this.app.get('/__dev-server/health', (_req, res) => {
+            res.json({
+                status: 'ok',
                 error: this.lastError || null,
-                clients: this.clients.size 
+                clients: this.clients.size
             });
         });
-        
+
         // Fallback to index.html for SPA routing
-        this.app.get('*', (req, res) => {
+        this.app.get('*', (_req, res) => {
             const indexPath = path.join(this.rootDir, 'index.html');
             if (fs.existsSync(indexPath)) {
                 res.sendFile(indexPath);

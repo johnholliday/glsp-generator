@@ -1,6 +1,5 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import Handlebars from 'handlebars';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -107,10 +106,10 @@ export class TemplateLoader {
         this.handlebars.registerHelper('formatDate', (dateString: string) => {
             if (!dateString) return '';
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
         });
 

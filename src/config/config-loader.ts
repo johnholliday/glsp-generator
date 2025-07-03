@@ -1,3 +1,4 @@
+import { injectable } from 'inversify';
 import fs from 'fs-extra';
 import path from 'path';
 import Ajv from 'ajv';
@@ -7,6 +8,7 @@ import { DEFAULT_CONFIG } from './default-config.js';
 import { getConfigSchemaPath } from '../utils/paths.js';
 import { ConfigInterpolator, InterpolationContext } from './config-interpolator.js';
 
+@injectable()
 export class ConfigLoader {
     private ajv: Ajv;
     private static CONFIG_FILE_NAME = '.glsprc.json';

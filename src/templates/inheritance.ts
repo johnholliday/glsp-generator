@@ -27,10 +27,10 @@ export class TemplateInheritance {
     processTemplate(template: string): string {
         // Reset blocks for each template processing
         this.blocks.clear();
-        
+
         // Pre-process the template to extract blocks and extends
         const processed = this.preProcessTemplate(template);
-        
+
         return processed;
     }
 
@@ -39,16 +39,16 @@ export class TemplateInheritance {
      */
     private preProcessTemplate(template: string): string {
         let processed = template;
-        
+
         // Extract extends directive
         const extendsMatch = processed.match(/\{\{#extend\s+["']([^"']+)["']\}\}([\s\S]*?)\{\{\/extend\}\}/);
         if (extendsMatch) {
             const layoutName = extendsMatch[1];
             const childContent = extendsMatch[2];
-            
+
             // Extract blocks from child content
             this.extractBlocks(childContent);
-            
+
             // Get parent layout
             const parentLayout = this.layouts.get(layoutName);
             if (parentLayout) {
@@ -59,7 +59,7 @@ export class TemplateInheritance {
                 processed = childContent;
             }
         }
-        
+
         return processed;
     }
 
@@ -69,7 +69,7 @@ export class TemplateInheritance {
     private extractBlocks(content: string): void {
         const blockRegex = /\{\{#content\s+["']([^"']+)["']\}\}([\s\S]*?)\{\{\/content\}\}/g;
         let match;
-        
+
         while ((match = blockRegex.exec(content)) !== null) {
             const blockName = match[1];
             const blockContent = match[2].trim();
@@ -82,16 +82,16 @@ export class TemplateInheritance {
      */
     private processParentLayout(layout: string): string {
         let processed = layout;
-        
+
         // Replace block placeholders with child content
         const blockRegex = /\{\{#block\s+["']([^"']+)["']\}\}([\s\S]*?)\{\{\/block\}\}/g;
-        
-        processed = processed.replace(blockRegex, (match, blockName, defaultContent) => {
+
+        processed = processed.replace(blockRegex, (_match, blockName, defaultContent) => {
             // Use child block content if available, otherwise use default
             const childContent = this.blocks.get(blockName);
             return childContent !== undefined ? childContent : defaultContent.trim();
         });
-        
+
         return processed;
     }
 
@@ -100,31 +100,31 @@ export class TemplateInheritance {
      */
     private registerInheritanceHelpers(): void {
         // Block helper - defines a replaceable block in parent template
-        this.handlebars.registerHelper('block', function(this: any, name: string, options: any) {
+        this.handlebars.registerHelper('block', function (this: any, _name: string, options: any) {
             // This is handled in pre-processing, so just return default content
             return options.fn ? options.fn(this) : '';
         });
 
         // Extend helper - indicates template inheritance
-        this.handlebars.registerHelper('extend', function(this: any, layoutName: string, options: any) {
+        this.handlebars.registerHelper('extend', function (this: any, _layoutName: string, options: any) {
             // This is handled in pre-processing, so just return content
             return options.fn ? options.fn(this) : '';
         });
 
         // Content helper - defines block content in child template
-        this.handlebars.registerHelper('content', function(this: any, blockName: string, options: any) {
+        this.handlebars.registerHelper('content', function (this: any, _blockName: string, options: any) {
             // This is handled in pre-processing, so just return content
             return options.fn ? options.fn(this) : '';
         });
 
         // Super helper - includes parent block content
-        this.handlebars.registerHelper('super', function(this: any) {
+        this.handlebars.registerHelper('super', function (this: any) {
             // TODO: Implement super functionality
             return '';
         });
 
         // Include helper - includes another template
-        this.handlebars.registerHelper('include', function(this: any, templateName: string, context?: any) {
+        this.handlebars.registerHelper('include', function (this: any, templateName: string, _context?: any) {
             // TODO: Implement include functionality
             return `<!-- Include: ${templateName} -->`;
         });
@@ -143,15 +143,15 @@ ${content}`;
      */
     static createChild(layoutName: string, blocks: Record<string, string>): string {
         let template = `{{#extend "${layoutName}"}}\n`;
-        
+
         for (const [blockName, content] of Object.entries(blocks)) {
             template += `  {{#content "${blockName}"}}\n`;
             template += content.split('\n').map(line => `    ${line}`).join('\n') + '\n';
             template += `  {{/content}}\n\n`;
         }
-        
+
         template += '{{/extend}}';
-        
+
         return template;
     }
 
@@ -160,27 +160,27 @@ ${content}`;
      */
     validateTemplate(template: string): { valid: boolean; errors: string[] } {
         const errors: string[] = [];
-        
+
         // Check for balanced extend/content blocks
         const extendMatches = (template.match(/\{\{#extend/g) || []).length;
         const extendCloses = (template.match(/\{\{\/extend\}\}/g) || []).length;
-        
+
         if (extendMatches !== extendCloses) {
             errors.push('Unbalanced extend blocks');
         }
-        
+
         const contentMatches = (template.match(/\{\{#content/g) || []).length;
         const contentCloses = (template.match(/\{\{\/content\}\}/g) || []).length;
-        
+
         if (contentMatches !== contentCloses) {
             errors.push('Unbalanced content blocks');
         }
-        
+
         // Check for valid extend usage (should only be one per template)
         if (extendMatches > 1) {
             errors.push('Template can only extend one layout');
         }
-        
+
         // Extract layout name and check if it exists
         const extendsMatch = template.match(/\{\{#extend\s+["']([^"']+)["']\}\}/);
         if (extendsMatch) {
@@ -189,7 +189,7 @@ ${content}`;
                 errors.push(`Layout '${layoutName}' not found`);
             }
         }
-        
+
         return {
             valid: errors.length === 0,
             errors

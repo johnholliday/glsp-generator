@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarProperty } from '../types/grammar.js';
+import { ParsedGrammar, GrammarInterface } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface FactoryGeneratorOptions {
@@ -15,12 +15,12 @@ export class FactoryGenerator {
     private builderTemplate!: HandlebarsTemplateDelegate;
     private motherTemplate!: HandlebarsTemplateDelegate;
     private indexTemplate!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplates();
         this.registerHelpers();
     }
-    
+
     private loadTemplates(): void {
         this.factoryTemplate = Handlebars.compile(`import { {{interfaceName}}, {{interfaceName}}Id } from '../../../src/common/{{projectName}}-model';
 import { v4 as uuid } from 'uuid';
@@ -486,25 +486,25 @@ export * from './test-data-utils';
 export * from './performance-data';
 `);
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('camelCase', (str: string) => {
             return str.charAt(0).toLowerCase() + str.slice(1);
         });
-        
+
         Handlebars.registerHelper('pascalCase', (str: string) => {
             return str.charAt(0).toUpperCase() + str.slice(1);
         });
-        
+
         Handlebars.registerHelper('kebabCase', (str: string) => {
             return str
                 .replace(/([A-Z])/g, '-$1')
                 .toLowerCase()
                 .replace(/^-/, '');
         });
-        
+
         Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
-        
+
         Handlebars.registerHelper('singularize', (str: string) => {
             // Simple singularization
             if (str.endsWith('ies')) {
@@ -517,7 +517,7 @@ export * from './performance-data';
             return str;
         });
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -530,13 +530,13 @@ export * from './performance-data';
             includeEdgeCases: true,
             ...options
         };
-        
+
         const generatedFiles: string[] = [];
-        
+
         // Create test data directories
         const factoryDir = path.join(outputDir, 'src', 'test', 'test-data', 'factories');
         await fs.ensureDir(factoryDir);
-        
+
         // Generate factories, builders, and mothers for each interface
         for (const iface of grammar.interfaces) {
             if (opts.generateModelFactories) {
@@ -545,14 +545,14 @@ export * from './performance-data';
                 await fs.writeFile(factoryPath, content);
                 generatedFiles.push(factoryPath);
             }
-            
+
             if (opts.generateBuilders) {
                 const builderPath = path.join(factoryDir, `${this.kebabCase(iface.name)}-builder.ts`);
                 const content = this.generateBuilder(iface, grammar);
                 await fs.writeFile(builderPath, content);
                 generatedFiles.push(builderPath);
             }
-            
+
             if (opts.generateMothers) {
                 const motherPath = path.join(factoryDir, `${this.kebabCase(iface.name)}-mother.ts`);
                 const content = this.generateMother(iface, grammar);
@@ -560,30 +560,30 @@ export * from './performance-data';
                 generatedFiles.push(motherPath);
             }
         }
-        
+
         // Generate index file
         const indexPath = path.join(factoryDir, 'index.ts');
         const indexContent = this.generateIndex(grammar);
         await fs.writeFile(indexPath, indexContent);
         generatedFiles.push(indexPath);
-        
+
         // Generate utility files
         await this.generateUtilityFiles(factoryDir, grammar);
         generatedFiles.push(path.join(factoryDir, 'test-data-utils.ts'));
         generatedFiles.push(path.join(factoryDir, 'performance-data.ts'));
-        
+
         return generatedFiles;
     }
-    
+
     private generateFactory(iface: GrammarInterface, grammar: ParsedGrammar): string {
         const requiredProperties = iface.properties.filter(p => !p.optional);
         const arrayProperties = iface.properties.filter(p => p.array);
         const stringProperties = iface.properties.filter(p => p.type === 'string' && !p.array);
         const numberProperties = iface.properties.filter(p => p.type === 'number' && !p.array);
-        const referenceProperties = iface.properties.filter(p => 
+        const referenceProperties = iface.properties.filter(p =>
             !['string', 'number', 'boolean'].includes(p.type) && !p.array
         );
-        
+
         const data = {
             projectName: grammar.projectName,
             interfaceName: iface.name,
@@ -598,14 +598,14 @@ export * from './performance-data';
             hasNumberProperties: numberProperties.length > 0,
             hasReferences: referenceProperties.length > 0
         };
-        
+
         return this.factoryTemplate(data);
     }
-    
+
     private generateBuilder(iface: GrammarInterface, grammar: ParsedGrammar): string {
         const requiredProperties = iface.properties.filter(p => !p.optional);
         const arrayProperties = iface.properties.filter(p => p.array);
-        
+
         const data = {
             projectName: grammar.projectName,
             interfaceName: iface.name,
@@ -613,14 +613,14 @@ export * from './performance-data';
             requiredProperties,
             arrayProperties
         };
-        
+
         return this.builderTemplate(data);
     }
-    
+
     private generateMother(iface: GrammarInterface, grammar: ParsedGrammar): string {
-        const hasProperty = (name: string) => 
+        const hasProperty = (name: string) =>
             iface.properties.some(p => p.name.toLowerCase() === name.toLowerCase());
-        
+
         const data = {
             projectName: grammar.projectName,
             interfaceName: iface.name,
@@ -630,16 +630,16 @@ export * from './performance-data';
             hasChildrenProperty: hasProperty('children'),
             hasOwnerProperty: hasProperty('owner') || hasProperty('ownerId')
         };
-        
+
         return this.motherTemplate(data);
     }
-    
+
     private generateIndex(grammar: ParsedGrammar): string {
         return this.indexTemplate({
             interfaces: grammar.interfaces
         });
     }
-    
+
     private async generateUtilityFiles(factoryDir: string, grammar: ParsedGrammar): Promise<void> {
         // Generate test-data-utils.ts
         const utilsContent = `import { ${grammar.interfaces.map(i => i.name).join(', ')} } from '../../../src/common/${grammar.projectName}-model';
@@ -735,9 +735,9 @@ export function resetAllFactories(): void {
 ${grammar.interfaces.map(i => `    ${i.name}Factory.reset();`).join('\n')}
 }
 `;
-        
+
         await fs.writeFile(path.join(factoryDir, 'test-data-utils.ts'), utilsContent);
-        
+
         // Generate performance-data.ts
         const perfContent = `import { createModelGraph, generateMixedData } from './test-data-utils';
 
@@ -861,10 +861,10 @@ export const performanceUtils = {
     }
 };
 `;
-        
+
         await fs.writeFile(path.join(factoryDir, 'performance-data.ts'), perfContent);
     }
-    
+
     private kebabCase(str: string): string {
         return str
             .replace(/([A-Z])/g, '-$1')

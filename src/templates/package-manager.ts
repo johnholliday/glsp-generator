@@ -2,7 +2,6 @@ import fs from 'fs-extra';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { TemplateConfig } from './types.js';
 
 const execAsync = promisify(exec);
 
@@ -25,7 +24,7 @@ export interface InstallOptions {
 }
 
 export class TemplatePackageManager {
-    private packagesDir: string;
+    private packagesDir: string; // eslint-disable-line @typescript-eslint/no-unused-vars
 
     constructor() {
         // Store packages in user's home directory or project-specific location
@@ -39,21 +38,21 @@ export class TemplatePackageManager {
         try {
             const installCmd = this.buildInstallCommand(packageName, options);
             console.log(`Installing template package: ${packageName}`);
-            
-            const { stdout, stderr } = await execAsync(installCmd);
-            
+
+            const { stdout: _stdout, stderr } = await execAsync(installCmd);
+
             if (stderr && !stderr.includes('npm WARN')) {
                 console.warn('Installation warnings:', stderr);
             }
-            
+
             console.log(`✅ Successfully installed ${packageName}`);
-            
+
             // Verify installation
             const isInstalled = await this.isPackageInstalled(packageName);
             if (!isInstalled) {
                 throw new Error(`Package installation verification failed for ${packageName}`);
             }
-            
+
         } catch (error) {
             throw new Error(`Failed to install template package '${packageName}': ${error}`);
         }
@@ -65,11 +64,11 @@ export class TemplatePackageManager {
     async uninstallPackage(packageName: string): Promise<void> {
         try {
             console.log(`Uninstalling template package: ${packageName}`);
-            
+
             await execAsync(`npm uninstall ${packageName}`);
-            
+
             console.log(`✅ Successfully uninstalled ${packageName}`);
-            
+
         } catch (error) {
             throw new Error(`Failed to uninstall template package '${packageName}': ${error}`);
         }
@@ -80,14 +79,14 @@ export class TemplatePackageManager {
      */
     async listInstalledPackages(): Promise<PackageInfo[]> {
         const packages: PackageInfo[] = [];
-        
+
         try {
             // Get list of installed packages
             const { stdout } = await execAsync('npm list --depth=0 --json');
             const npmList = JSON.parse(stdout);
-            
+
             if (npmList.dependencies) {
-                for (const [name, info] of Object.entries(npmList.dependencies)) {
+                for (const [name, _info] of Object.entries(npmList.dependencies)) {
                     if (await this.isTemplatePackage(name)) {
                         const packageInfo = await this.getPackageInfo(name);
                         if (packageInfo) {
@@ -96,11 +95,11 @@ export class TemplatePackageManager {
                     }
                 }
             }
-            
+
         } catch (error) {
             console.warn('Failed to list installed packages:', error);
         }
-        
+
         return packages;
     }
 
@@ -112,10 +111,10 @@ export class TemplatePackageManager {
             // Search npm registry for packages with glsp-template keywords
             const searchCmd = `npm search ${query} --json`;
             const { stdout } = await execAsync(searchCmd);
-            
+
             const searchResults = JSON.parse(stdout);
             const packages: PackageInfo[] = [];
-            
+
             for (const result of searchResults) {
                 // Filter for template packages
                 if (this.looksLikeTemplatePackage(result)) {
@@ -130,9 +129,9 @@ export class TemplatePackageManager {
                     });
                 }
             }
-            
+
             return packages;
-            
+
         } catch (error) {
             console.warn('Failed to search packages:', error);
             return [];
@@ -146,7 +145,7 @@ export class TemplatePackageManager {
         try {
             const isInstalled = await this.isPackageInstalled(packageName);
             let packageInfo: any = {};
-            
+
             if (isInstalled) {
                 // Get local package info
                 const packagePath = require.resolve(`${packageName}/package.json`);
@@ -156,7 +155,7 @@ export class TemplatePackageManager {
                 const { stdout } = await execAsync(`npm view ${packageName} --json`);
                 packageInfo = JSON.parse(stdout);
             }
-            
+
             return {
                 name: packageInfo.name,
                 version: packageInfo.version,
@@ -168,7 +167,7 @@ export class TemplatePackageManager {
                 installedVersion: isInstalled ? packageInfo.version : undefined,
                 location: isInstalled ? path.dirname(require.resolve(`${packageName}/package.json`)) : undefined
             };
-            
+
         } catch (error) {
             console.warn(`Failed to get package info for ${packageName}:`, error);
             return null;
@@ -194,7 +193,7 @@ export class TemplatePackageManager {
         try {
             const packagePath = require.resolve(`${packageName}/package.json`);
             const packageJson = await fs.readJSON(packagePath);
-            
+
             // Check for template-related keywords or config
             return !!(
                 packageJson.glspTemplates ||
@@ -215,7 +214,7 @@ export class TemplatePackageManager {
         const name = result.name || '';
         const keywords = result.keywords || [];
         const description = result.description || '';
-        
+
         return !!(
             keywords.includes('glsp-template') ||
             keywords.includes('glsp-generator') ||
@@ -230,21 +229,21 @@ export class TemplatePackageManager {
      */
     private buildInstallCommand(packageName: string, options: InstallOptions): string {
         let cmd = 'npm install';
-        
+
         if (options.global) {
             cmd += ' -g';
         }
-        
+
         if (options.dev) {
             cmd += ' --save-dev';
         }
-        
+
         if (options.version) {
             packageName += `@${options.version}`;
         }
-        
+
         cmd += ` ${packageName}`;
-        
+
         return cmd;
     }
 
@@ -253,15 +252,15 @@ export class TemplatePackageManager {
      */
     async validatePackage(packageName: string): Promise<{ valid: boolean; errors: string[] }> {
         const errors: string[] = [];
-        
+
         try {
             if (!await this.isPackageInstalled(packageName)) {
                 errors.push(`Package ${packageName} is not installed`);
                 return { valid: false, errors };
             }
-            
+
             const packagePath = path.dirname(require.resolve(`${packageName}/package.json`));
-            
+
             // Check for required files
             const requiredFiles = ['package.json'];
             for (const file of requiredFiles) {
@@ -269,23 +268,23 @@ export class TemplatePackageManager {
                     errors.push(`Missing required file: ${file}`);
                 }
             }
-            
+
             // Check for template directories
             const templatesDir = path.join(packagePath, 'templates');
             if (!await fs.pathExists(templatesDir)) {
                 errors.push('Missing templates directory');
             }
-            
+
             // Check package.json for template metadata
             const packageJson = await fs.readJSON(path.join(packagePath, 'package.json'));
             if (!packageJson.glspTemplates && !this.looksLikeTemplatePackage(packageJson)) {
                 errors.push('Package does not appear to be a GLSP template package');
             }
-            
+
         } catch (error) {
             errors.push(`Validation error: ${error}`);
         }
-        
+
         return {
             valid: errors.length === 0,
             errors
@@ -298,11 +297,11 @@ export class TemplatePackageManager {
     async updatePackage(packageName: string): Promise<void> {
         try {
             console.log(`Updating template package: ${packageName}`);
-            
+
             await execAsync(`npm update ${packageName}`);
-            
+
             console.log(`✅ Successfully updated ${packageName}`);
-            
+
         } catch (error) {
             throw new Error(`Failed to update template package '${packageName}': ${error}`);
         }
@@ -315,12 +314,12 @@ export class TemplatePackageManager {
         try {
             const packagePath = require.resolve(`${packageName}/package.json`);
             const packageJson = await fs.readJSON(packagePath);
-            
+
             const dependencies = Object.keys(packageJson.dependencies || {});
             const peerDependencies = Object.keys(packageJson.peerDependencies || {});
-            
+
             return [...dependencies, ...peerDependencies];
-            
+
         } catch (error) {
             console.warn(`Failed to get dependencies for ${packageName}:`, error);
             return [];

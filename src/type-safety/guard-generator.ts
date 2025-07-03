@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarType } from '../types/grammar.js';
+import { ParsedGrammar } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface GuardGeneratorOptions {
@@ -12,12 +12,12 @@ export interface GuardGeneratorOptions {
 
 export class GuardGenerator {
     private template!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplate();
         this.registerHelpers();
     }
-    
+
     private loadTemplate(): void {
         const templateContent = `/**
  * Type guard functions for {{projectName}}
@@ -173,14 +173,14 @@ export function partitionByType<T extends { type: string }, K extends T['type']>
 
         this.template = Handlebars.compile(templateContent, { noEscape: true });
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('isCustomType', (type: string) => {
             const primitives = ['string', 'number', 'boolean', 'ID'];
             return !primitives.includes(type) && !type.endsWith('[]');
         });
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -193,10 +193,10 @@ export function partitionByType<T extends { type: string }, K extends T['type']>
             generateNestedGuards: true,
             ...options
         };
-        
+
         const typesDir = path.join(outputDir, 'src', 'types');
         await fs.ensureDir(typesDir);
-        
+
         // Prepare template data
         const data = {
             projectName: grammar.projectName,
@@ -204,13 +204,13 @@ export function partitionByType<T extends { type: string }, K extends T['type']>
             unionTypeName: `${this.toPascalCase(grammar.projectName)}Node`,
             ...opts
         };
-        
+
         // Generate guards file
         const content = this.template(data);
         const outputPath = path.join(typesDir, `${grammar.projectName}-guards.ts`);
         await fs.writeFile(outputPath, content);
     }
-    
+
     private toPascalCase(str: string): string {
         return str
             .split(/[\s_-]+/)

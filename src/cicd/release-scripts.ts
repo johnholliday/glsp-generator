@@ -456,7 +456,7 @@ release();
 
     async generate(
         grammar: ParsedGrammar,
-        config: GLSPConfig,
+        _config: GLSPConfig,
         outputDir: string,
         options: ReleaseScriptsOptions = {}
     ): Promise<string[]> {

@@ -45,7 +45,7 @@ export class ReadmeGenerator {
         this.loadTemplate();
         this.registerHelpers();
         // Disable HTML escaping for markdown
-        Handlebars.registerHelper('raw', function(this: any, options: any) {
+        Handlebars.registerHelper('raw', function (this: any, options: any) {
             return options.fn(this);
         });
     }
@@ -184,7 +184,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
     private registerHelpers(): void {
         Handlebars.registerHelper('toLowerCase', (str: string) => str?.toLowerCase() || '');
-        
+
         Handlebars.registerHelper('generateExample', (interfaceName: string, properties: PropertyDoc[]) => {
             const lines: string[] = [`${interfaceName} {`];
             properties.forEach(prop => {
@@ -197,12 +197,12 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
             return lines.join('\n');
         });
 
-        Handlebars.registerHelper('generateBasicExample', (interfaces: InterfaceDoc[], types: TypeDoc[]) => {
+        Handlebars.registerHelper('generateBasicExample', (interfaces: InterfaceDoc[], _types: TypeDoc[]) => {
             if (!interfaces || interfaces.length === 0) return '// No interfaces defined';
-            
+
             const nodeInterface = interfaces.find(i => i.name.toLowerCase().includes('node')) || interfaces[0];
             const lines: string[] = [];
-            
+
             lines.push(`// Basic ${nodeInterface.name} example`);
             lines.push(`${nodeInterface.name} myElement {`);
             nodeInterface.properties.slice(0, 3).forEach(prop => {
@@ -212,16 +212,16 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
                 }
             });
             lines.push('}');
-            
+
             return lines.join('\n');
         });
 
-        Handlebars.registerHelper('generateComplexExample', (interfaces: InterfaceDoc[], types: TypeDoc[]) => {
+        Handlebars.registerHelper('generateComplexExample', (interfaces: InterfaceDoc[], _types: TypeDoc[]) => {
             if (!interfaces || interfaces.length === 0) return '// No interfaces defined';
-            
+
             const lines: string[] = [];
             lines.push('// Complex model with multiple elements');
-            
+
             // Add examples for up to 3 interfaces
             interfaces.slice(0, 3).forEach((iface, index) => {
                 if (index > 0) lines.push('');
@@ -232,7 +232,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
                 });
                 lines.push('}');
             });
-            
+
             return lines.join('\n');
         });
     }
@@ -263,7 +263,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
     async generate(grammar: ParsedGrammar, config: GLSPConfig, outputDir: string): Promise<void> {
         const data = this.prepareData(grammar, config);
         const readmeContent = this.template(data);
-        
+
         const readmePath = path.join(outputDir, 'README.md');
         await fs.writeFile(readmePath, readmeContent);
     }
@@ -271,13 +271,13 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
     private prepareData(grammar: ParsedGrammar, config: GLSPConfig): ReadmeData {
         // Use grammar-based name unless explicitly overridden in config
         const isDefaultConfig = config.extension.name === 'my-glsp-extension';
-        const extensionName = isDefaultConfig 
+        const extensionName = isDefaultConfig
             ? `${grammar.projectName}-glsp-extension`
             : config.extension.name;
         const displayName = isDefaultConfig || !config.extension.displayName
             ? `${grammar.projectName} Extension`
             : config.extension.displayName;
-        
+
         return {
             extensionName,
             displayName,
@@ -384,10 +384,10 @@ yarn add ${extensionName}
 
         const firstInterface = grammar.interfaces[0];
         const lines: string[] = [];
-        
+
         lines.push(`// Create a simple ${firstInterface.name}`);
         lines.push(`${firstInterface.name} myFirst${firstInterface.name} {`);
-        
+
         // Add required properties
         firstInterface.properties
             .filter(p => !p.optional)
@@ -396,7 +396,7 @@ yarn add ${extensionName}
                 const value = this.getExampleValue(prop.type, prop.array);
                 lines.push(`    ${prop.name}: ${value}`);
             });
-        
+
         lines.push('}');
         return lines.join('\n');
     }

@@ -47,7 +47,7 @@ function generateRulesFromGrammar(grammar: ParsedGrammar): ParsedRule[] {
             name: iface.name,
             definition: generateRuleDefinition(iface),
             type: 'interface',
-            properties: iface.properties.map(p => p.name),
+            properties: iface.properties,
             references: extractReferences(iface)
         };
         rules.push(rule);
@@ -289,10 +289,13 @@ export function optimizeAST(ast: GrammarAST): GrammarAST {
 
     // Update metadata
     optimized.metadata = {
+        ...ast.metadata,
         ruleCount: ast.metadata?.ruleCount || 0,
         interfaceCount: ast.metadata?.interfaceCount || 0,
         parseTime: ast.metadata?.parseTime || Date.now(),
-        ...ast.metadata,
+        typeCount: ast.metadata?.typeCount || 0,
+        hasComplexTypes: ast.metadata?.hasComplexTypes || false,
+        hasCircularReferences: ast.metadata?.hasCircularReferences || false,
         optimized: true,
         optimizationTime: Date.now()
     };

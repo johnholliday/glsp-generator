@@ -1,0 +1,328 @@
+import { describe, it, expect, beforeEach, vi, Mock } from 'vitest';
+import { Container } from 'inversify';
+import { MemoryManager } from '../memory-manager.js';
+import { IPerformanceMonitor } from '../interfaces/performance-monitor.interface.js';
+import { ISystemInfoService } from '../interfaces/system-info.interface.js';
+import { PerformanceConfig, MemoryUsage } from '../types.js';
+import { TYPES } from '../../config/di/types.js';
+
+describe('MemoryManager', () => {
+    let container: Container;
+    let memoryManager: MemoryManager;
+    let mockPerformanceMonitor: IPerformanceMonitor;
+    let mockSystemInfoService: ISystemInfoService;
+    let mockConfig: PerformanceConfig;
+
+    const mockMemoryUsage: MemoryUsage = {
+        heapUsed: 100 * 1024 * 1024, // 100MB
+        heapTotal: 200 * 1024 * 1024, // 200MB
+        external: 10 * 1024 * 1024, // 10MB
+        rss: 150 * 1024 * 1024, // 150MB
+        arrayBuffers: 5 * 1024 * 1024 // 5MB
+    };
+
+    beforeEach(() => {
+        container = new Container();
+
+        // Create mocks
+        mockPerformanceMonitor = {
+            getMemoryUsage: vi.fn().mockReturnValue(mockMemoryUsage),
+            isMemoryPressure: vi.fn().mockReturnValue(false),
+            forceGC: vi.fn().mockReturnValue(true),
+            startOperation: vi.fn().mockReturnValue(() => { }),
+            recordMetric: vi.fn(),
+            printSummary: vi.fn(),
+            reset: vi.fn()
+        };
+
+        mockSystemInfoService = {
+            getTotalMemory: vi.fn().mockReturnValue(8 * 1024 * 1024 * 1024), // 8GB
+            getFreeMemory: vi.fn().mockReturnValue(4 * 1024 * 1024 * 1024), // 4GB
+            getPlatform: vi.fn().mockReturnValue('linux'),
+            getArchitecture: vi.fn().mockReturnValue('x64'),
+            getCpuCount: vi.fn().mockReturnValue(8),
+            getUptime: vi.fn().mockReturnValue(3600)
+        };
+
+        mockConfig = {
+            enableMemoryMonitoring: true,
+            maxMemoryUsage: 512 * 1024 * 1024, // 512MB
+            gcHints: true,
+            profileMode: false
+        };
+
+        // Bind mocks to container
+        container.bind<IPerformanceMonitor>(TYPES.IPerformanceMonitor).toConstantValue(mockPerformanceMonitor);
+        container.bind<ISystemInfoService>(TYPES.ISystemInfoService).toConstantValue(mockSystemInfoService);
+        container.bind<PerformanceConfig>(TYPES.PerformanceConfig).toConstantValue(mockConfig);
+        container.bind<MemoryManager>(TYPES.MemoryManager).to(MemoryManager);
+
+        memoryManager = container.get<MemoryManager>(TYPES.MemoryManager);
+    });
+
+    afterEach(() => {
+        // Clean up memory manager to prevent event listener leaks
+        memoryManager.stopMonitoring();
+        memoryManager.removeAllListeners();
+    });
+
+    describe('constructor', () => {
+        it('should initialize with injected dependencies', () => {
+            expect(memoryManager).toBeInstanceOf(MemoryManager);
+            expect(mockSystemInfoService.getTotalMemory).toHaveBeenCalled();
+        });
+
+        it('should set default thresholds based on system memory', () => {
+            const stats = memoryManager.getStats();
+            const totalMemory = 8 * 1024 * 1024 * 1024; // 8GB
+
+            expect(stats.thresholds.warning).toBe(totalMemory * 0.7);
+            expect(stats.thresholds.critical).toBe(totalMemory * 0.85);
+            expect(stats.thresholds.cleanup).toBe(totalMemory * 0.6);
+        });
+    });
+
+    describe('memory monitoring', () => {
+        it('should start monitoring', () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            memoryManager.startMonitoring();
+
+            expect(consoleSpy).toHaveBeenCalledWith('🧠 Memory monitoring started');
+            consoleSpy.mockRestore();
+        });
+
+        it('should stop monitoring', () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            memoryManager.startMonitoring();
+            memoryManager.stopMonitoring();
+
+            expect(consoleSpy).toHaveBeenCalledWith('🧠 Memory monitoring stopped');
+            consoleSpy.mockRestore();
+        });
+
+        it('should not start monitoring if already monitoring', () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            memoryManager.startMonitoring();
+            memoryManager.startMonitoring(); // Second call should be ignored
+
+            expect(consoleSpy).toHaveBeenCalledTimes(1);
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('memory usage', () => {
+        it('should get current memory usage', () => {
+            const usage = memoryManager.getMemoryUsage();
+            expect(usage).toEqual(mockMemoryUsage);
+            expect(mockPerformanceMonitor.getMemoryUsage).toHaveBeenCalled();
+        });
+
+        it('should detect memory pressure', () => {
+            mockPerformanceMonitor.isMemoryPressure = vi.fn().mockReturnValue(true);
+
+            const isUnderPressure = memoryManager.isMemoryPressure();
+            expect(isUnderPressure).toBe(true);
+        });
+    });
+
+    describe('garbage collection', () => {
+        it('should force garbage collection', () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            const result = memoryManager.forceGC();
+
+            expect(result).toBe(true);
+            expect(mockPerformanceMonitor.forceGC).toHaveBeenCalled();
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle GC failure gracefully', () => {
+            mockPerformanceMonitor.forceGC = vi.fn().mockReturnValue(false);
+
+            const result = memoryManager.forceGC();
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('emergency cleanup', () => {
+        it('should perform emergency cleanup', () => {
+            const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+            const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
+            memoryManager.emergencyCleanup();
+
+            expect(consoleWarnSpy).toHaveBeenCalledWith('🚨 Emergency memory cleanup initiated');
+            expect(mockPerformanceMonitor.forceGC).toHaveBeenCalled();
+
+            consoleWarnSpy.mockRestore();
+            consoleLogSpy.mockRestore();
+        });
+    });
+
+    describe('memory statistics', () => {
+        it('should return memory statistics', () => {
+            const stats = memoryManager.getStats();
+
+            expect(stats).toHaveProperty('current');
+            expect(stats).toHaveProperty('peak');
+            expect(stats).toHaveProperty('thresholds');
+            expect(stats).toHaveProperty('gcCount');
+            expect(stats).toHaveProperty('lastGC');
+            expect(stats.current).toEqual(mockMemoryUsage);
+        });
+
+        it('should allow setting custom thresholds', () => {
+            const customThresholds = {
+                warning: 1000,
+                critical: 2000
+            };
+
+            memoryManager.setThresholds(customThresholds);
+            const stats = memoryManager.getStats();
+
+            expect(stats.thresholds.warning).toBe(1000);
+            expect(stats.thresholds.critical).toBe(2000);
+        });
+    });
+
+    describe('memory recommendations', () => {
+        it('should provide memory recommendations', () => {
+            const recommendations = memoryManager.getRecommendations();
+            expect(Array.isArray(recommendations)).toBe(true);
+        });
+
+        it('should recommend streaming for high memory usage', () => {
+            // Mock high memory usage
+            const highMemoryUsage = {
+                ...mockMemoryUsage,
+                heapUsed: 6 * 1024 * 1024 * 1024 // 6GB (above warning threshold)
+            };
+            mockPerformanceMonitor.getMemoryUsage = vi.fn().mockReturnValue(highMemoryUsage);
+
+            const recommendations = memoryManager.getRecommendations();
+            expect(recommendations.some(rec => rec.includes('streaming'))).toBe(true);
+        });
+    });
+
+    describe('memory pressure levels', () => {
+        it('should return low pressure for normal usage', () => {
+            const level = memoryManager.getMemoryPressureLevel();
+            expect(level).toBe('low');
+        });
+
+        it('should return critical pressure for high usage', () => {
+            const criticalMemoryUsage = {
+                ...mockMemoryUsage,
+                heapUsed: 7 * 1024 * 1024 * 1024 // 7GB (above critical threshold)
+            };
+            mockPerformanceMonitor.getMemoryUsage = vi.fn().mockReturnValue(criticalMemoryUsage);
+
+            const level = memoryManager.getMemoryPressureLevel();
+            expect(level).toBe('critical');
+        });
+    });
+
+    describe('memory snapshot', () => {
+        it('should create memory snapshot', () => {
+            const snapshot = memoryManager.createSnapshot();
+
+            expect(snapshot).toHaveProperty('timestamp');
+            expect(snapshot).toHaveProperty('memory');
+            expect(snapshot).toHaveProperty('peak');
+            expect(snapshot).toHaveProperty('thresholds');
+            expect(snapshot).toHaveProperty('gcStats');
+            expect(snapshot).toHaveProperty('system');
+            expect(snapshot).toHaveProperty('pressureLevel');
+            expect(snapshot).toHaveProperty('recommendations');
+
+            expect(snapshot.system).toHaveProperty('totalMemory');
+            expect(snapshot.system).toHaveProperty('platform');
+            expect(snapshot.system).toHaveProperty('arch');
+            expect(snapshot.system).toHaveProperty('cpus');
+        });
+    });
+
+    describe('event handling', () => {
+        it('should emit events during operations', () => {
+            return new Promise<void>((resolve) => {
+                memoryManager.on('gc', (data) => {
+                    expect(data).toHaveProperty('before');
+                    expect(data).toHaveProperty('after');
+                    expect(data).toHaveProperty('freed');
+                    resolve();
+                });
+
+                // Mock global.gc to trigger the event
+                global.gc = vi.fn();
+                memoryManager.forceGC();
+            });
+        });
+
+        it('should emit emergency cleanup events', () => {
+            return new Promise<void>((resolve) => {
+                memoryManager.on('emergency-cleanup', () => {
+                    resolve();
+                });
+
+                memoryManager.emergencyCleanup();
+            });
+        });
+    });
+
+    describe('dependency injection', () => {
+        it('should work with different performance monitor implementations', () => {
+            const alternativeMonitor: IPerformanceMonitor = {
+                getMemoryUsage: vi.fn().mockReturnValue({
+                    ...mockMemoryUsage,
+                    heapUsed: 50 * 1024 * 1024
+                }),
+                isMemoryPressure: vi.fn().mockReturnValue(false),
+                forceGC: vi.fn().mockReturnValue(false),
+                startOperation: vi.fn().mockReturnValue(() => { }),
+                recordMetric: vi.fn(),
+                printSummary: vi.fn(),
+                reset: vi.fn()
+            };
+
+            const altContainer = new Container();
+            altContainer.bind<IPerformanceMonitor>(TYPES.IPerformanceMonitor).toConstantValue(alternativeMonitor);
+            altContainer.bind<ISystemInfoService>(TYPES.ISystemInfoService).toConstantValue(mockSystemInfoService);
+            altContainer.bind<PerformanceConfig>(TYPES.PerformanceConfig).toConstantValue(mockConfig);
+            altContainer.bind<MemoryManager>(TYPES.MemoryManager).to(MemoryManager);
+
+            const altMemoryManager = altContainer.get<MemoryManager>(TYPES.MemoryManager);
+            const usage = altMemoryManager.getMemoryUsage();
+
+            expect(usage.heapUsed).toBe(50 * 1024 * 1024);
+            expect(alternativeMonitor.getMemoryUsage).toHaveBeenCalled();
+        });
+
+        it('should work with different system info implementations', () => {
+            const alternativeSystemInfo: ISystemInfoService = {
+                getTotalMemory: vi.fn().mockReturnValue(16 * 1024 * 1024 * 1024), // 16GB
+                getFreeMemory: vi.fn().mockReturnValue(8 * 1024 * 1024 * 1024),
+                getPlatform: vi.fn().mockReturnValue('darwin'),
+                getArchitecture: vi.fn().mockReturnValue('arm64'),
+                getCpuCount: vi.fn().mockReturnValue(12),
+                getUptime: vi.fn().mockReturnValue(7200)
+            };
+
+            const altContainer = new Container();
+            altContainer.bind<IPerformanceMonitor>(TYPES.IPerformanceMonitor).toConstantValue(mockPerformanceMonitor);
+            altContainer.bind<ISystemInfoService>(TYPES.ISystemInfoService).toConstantValue(alternativeSystemInfo);
+            altContainer.bind<PerformanceConfig>(TYPES.PerformanceConfig).toConstantValue(mockConfig);
+            altContainer.bind<MemoryManager>(TYPES.MemoryManager).to(MemoryManager);
+
+            const altMemoryManager = altContainer.get<MemoryManager>(TYPES.MemoryManager);
+            const snapshot = altMemoryManager.createSnapshot();
+
+            expect(snapshot.system.totalMemory).toBe(16 * 1024 * 1024 * 1024);
+            expect(snapshot.system.platform).toBe('darwin');
+            expect(snapshot.system.arch).toBe('arm64');
+            expect(snapshot.system.cpus).toBe(12);
+        });
+    });
+});

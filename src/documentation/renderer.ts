@@ -1,25 +1,29 @@
-import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar } from '../types/grammar.js';
-import { 
-    DocumentationData, 
-    ClassDoc, 
-    InterfaceDoc, 
+import { injectable, inject } from 'inversify';
+import {
+    DocumentationData,
+    ClassDoc,
+    InterfaceDoc,
     MethodDoc,
     PropertyDoc,
     ComponentDoc,
     ExampleData
 } from './collector.js';
+import { IDocumentationRenderer, IDocumentationConfig, IFileSystemService, TYPES } from './interfaces.js';
 
-export class DocumentationRenderer {
+@injectable()
+export class DocumentationRenderer implements IDocumentationRenderer {
     private templatesDir: string;
 
-    constructor(private readonly config: any) {
-        this.templatesDir = path.join(__dirname, 'templates');
+    constructor(
+        @inject(TYPES.IDocumentationConfig) private readonly config: IDocumentationConfig,
+        @inject(TYPES.IFileSystemService) private readonly fileSystem: IFileSystemService
+    ) {
+        this.templatesDir = this.config.templatesDir || path.join(__dirname, 'templates');
     }
 
     async renderOverview(data: DocumentationData): Promise<string> {
-        const template = this.loadTemplate('overview.md');
+        const template = await this.loadTemplate('overview.md');
         return this.render(template, {
             projectName: data.overview.projectName,
             description: data.overview.description,
@@ -59,8 +63,8 @@ export class DocumentationRenderer {
     }
 
     async renderArchitecture(data: DocumentationData): Promise<string> {
-        const template = this.loadTemplate('architecture.md');
-        
+        const template = await this.loadTemplate('architecture.md');
+
         const componentsSection = data.architecture.components
             .map(c => this.renderComponent(c))
             .join('\n\n');
@@ -76,8 +80,8 @@ export class DocumentationRenderer {
     }
 
     async renderExamples(data: DocumentationData): Promise<string> {
-        const template = this.loadTemplate('examples.md');
-        
+        const template = await this.loadTemplate('examples.md');
+
         const examplesSection = data.examples
             .map(ex => this.renderExample(ex))
             .join('\n\n');
@@ -130,7 +134,7 @@ export class DocumentationRenderer {
     private renderMethod(method: MethodDoc): string {
         let content = `##### ${method.name}\n\n`;
         content += `${method.description}\n\n`;
-        
+
         content += '```typescript\n';
         content += `${method.name}(`;
         content += method.parameters
@@ -153,11 +157,11 @@ export class DocumentationRenderer {
     private renderProperties(properties: PropertyDoc[]): string {
         let content = '| Property | Type | Description |\n';
         content += '|----------|------|-------------|\n';
-        
+
         for (const prop of properties) {
             content += `| ${prop.name}${prop.optional ? '?' : ''} | \`${prop.type}\` | ${prop.description} |\n`;
         }
-        
+
         content += '\n';
         return content;
     }
@@ -165,29 +169,29 @@ export class DocumentationRenderer {
     private renderComponent(component: ComponentDoc): string {
         let content = `### ${component.name}\n\n`;
         content += `${component.description}\n\n`;
-        
+
         content += '**Responsibilities:**\n';
         content += component.responsibilities.map(r => `- ${r}`).join('\n');
         content += '\n\n';
-        
+
         if (component.dependencies.length > 0) {
             content += '**Dependencies:**\n';
             content += component.dependencies.map(d => `- ${d}`).join('\n');
             content += '\n';
         }
-        
+
         return content;
     }
 
     private renderDataFlow(dataFlow: any): string {
         let content = `### ${dataFlow.name}\n\n`;
         content += `${dataFlow.description}\n\n`;
-        
+
         content += '**Steps:**\n';
         dataFlow.steps.forEach((step: string, index: number) => {
             content += `${index + 1}. ${step}\n`;
         });
-        
+
         return content;
     }
 
@@ -200,10 +204,14 @@ export class DocumentationRenderer {
         return content;
     }
 
-    private loadTemplate(filename: string): string {
+    private async loadTemplate(filename: string): Promise<string> {
         const templatePath = path.join(this.templatesDir, filename);
         try {
-            return fs.readFileSync(templatePath, 'utf-8');
+            const exists = await this.fileSystem.exists(templatePath);
+            if (exists) {
+                return await this.fileSystem.readFile(templatePath);
+            }
+            return this.getDefaultTemplate(filename);
         } catch (error) {
             // Return a default template if file doesn't exist
             return this.getDefaultTemplate(filename);

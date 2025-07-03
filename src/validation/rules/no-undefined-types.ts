@@ -14,7 +14,7 @@ export class NoUndefinedTypesRule implements LinterRule {
         // Collect all defined types
         const definedTypes = new Set<string>();
         const builtinTypes = new Set(['string', 'number', 'boolean', 'ID']);
-        
+
         if (ast.rules) {
             ast.rules.forEach((rule: any) => {
                 if (rule.name) {
@@ -37,9 +37,9 @@ export class NoUndefinedTypesRule implements LinterRule {
                         if (typeName && !definedTypes.has(typeName) && !builtinTypes.has(typeName)) {
                             const location = this.findTypeLocation(typeName, rule, lines);
                             diagnostics.push(this.createUndefinedTypeDiagnostic(
-                                typeName, 
-                                location, 
-                                grammarFile, 
+                                typeName,
+                                location,
+                                grammarFile,
                                 Array.from(definedTypes)
                             ));
                         }
@@ -54,9 +54,9 @@ export class NoUndefinedTypesRule implements LinterRule {
                             if (typeName && !definedTypes.has(typeName) && !builtinTypes.has(typeName)) {
                                 const location = this.findTypeLocation(typeName, feature, lines);
                                 diagnostics.push(this.createUndefinedTypeDiagnostic(
-                                    typeName, 
-                                    location, 
-                                    grammarFile, 
+                                    typeName,
+                                    location,
+                                    grammarFile,
                                     Array.from(definedTypes)
                                 ));
                             }
@@ -87,7 +87,7 @@ export class NoUndefinedTypesRule implements LinterRule {
         return null;
     }
 
-    private findTypeLocation(typeName: string, node: any, lines: string[]): { line: number; column: number } {
+    private findTypeLocation(typeName: string, _node: any, lines: string[]): { line: number; column: number } {
         // Search for the type reference in the source
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -105,7 +105,7 @@ export class NoUndefinedTypesRule implements LinterRule {
     }
 
     private createUndefinedTypeDiagnostic(
-        typeName: string, 
+        typeName: string,
         location: { line: number; column: number },
         grammarFile: string,
         definedTypes: string[]

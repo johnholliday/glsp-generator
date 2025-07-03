@@ -1,27 +1,16 @@
 import { EventEmitter } from 'events';
-import os from 'os';
-import { PerformanceMonitor } from './monitor.js';
-import { PerformanceConfig, MemoryUsage } from './types';
-
-export interface MemoryThresholds {
-    warning: number;    // bytes
-    critical: number;   // bytes
-    cleanup: number;    // bytes
-}
-
-export interface MemoryStats {
-    current: MemoryUsage;
-    peak: MemoryUsage;
-    thresholds: MemoryThresholds;
-    gcCount: number;
-    lastGC: number;
-}
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../config/di/types.js';
+import { ISystemInfoService } from './interfaces/system-info.interface.js';
+import { IMemoryManager, MemoryThresholds, MemoryStats } from './interfaces/memory-manager.interface.js';
+import { PerformanceConfig, MemoryUsage } from './types.js';
 
 /**
  * Advanced memory management with monitoring and cleanup
+ * Fully injectable implementation with comprehensive dependency injection
  */
-export class MemoryManager extends EventEmitter {
-    private monitor: PerformanceMonitor;
+@injectable()
+export class MemoryManager extends EventEmitter implements IMemoryManager {
     private thresholds: MemoryThresholds;
     private peakMemory: MemoryUsage;
     private gcCount = 0;
@@ -31,14 +20,14 @@ export class MemoryManager extends EventEmitter {
     private eventHandlers?: { warningHandler: (warning: Error) => void; exceptionHandler: (error: Error) => void; };
 
     constructor(
-        private config: PerformanceConfig = {},
-        monitor?: PerformanceMonitor
+        // @inject(TYPES.IPerformanceMonitor) private monitor: IPerformanceMonitor,
+        @inject(TYPES.ISystemInfoService) private systemInfo: ISystemInfoService,
+        @inject(TYPES.PerformanceConfig) private config: PerformanceConfig
     ) {
         super();
-        this.monitor = monitor || new PerformanceMonitor();
 
         // Default thresholds (adjust based on system memory)
-        const totalMemory = this.getTotalSystemMemory();
+        const totalMemory = this.systemInfo.getTotalMemory();
         this.thresholds = {
             warning: totalMemory * 0.7, // 70% of total memory
             critical: totalMemory * 0.85, // 85% of total memory
@@ -74,14 +63,14 @@ export class MemoryManager extends EventEmitter {
             this.monitoringInterval = undefined;
         }
         this.isMonitoring = false;
-        
+
         // Remove event handlers to prevent keeping process alive
         if (this.eventHandlers) {
             process.removeListener('warning', this.eventHandlers.warningHandler);
             process.removeListener('uncaughtException', this.eventHandlers.exceptionHandler);
             this.eventHandlers = undefined;
         }
-        
+
         console.log('🧠 Memory monitoring stopped');
     }
 
@@ -197,6 +186,51 @@ export class MemoryManager extends EventEmitter {
     }
 
     /**
+     * Get memory pressure level
+     */
+    getMemoryPressureLevel(): 'low' | 'medium' | 'high' | 'critical' {
+        const current = this.getCurrentMemoryUsage();
+
+        if (current.heapUsed > this.thresholds.critical) {
+            return 'critical';
+        } else if (current.heapUsed > this.thresholds.warning) {
+            return 'high';
+        } else if (current.heapUsed > this.thresholds.cleanup) {
+            return 'medium';
+        } else {
+            return 'low';
+        }
+    }
+
+    /**
+     * Create memory snapshot for debugging
+     */
+    createSnapshot(): any {
+        const current = this.getCurrentMemoryUsage();
+        const systemInfo = {
+            totalMemory: this.systemInfo.getTotalMemory(),
+            freeMemory: this.systemInfo.getFreeMemory(),
+            platform: this.systemInfo.getPlatform(),
+            arch: this.systemInfo.getArchitecture(),
+            cpus: this.systemInfo.getCpuCount()
+        };
+
+        return {
+            timestamp: new Date().toISOString(),
+            memory: current,
+            peak: this.peakMemory,
+            thresholds: this.thresholds,
+            gcStats: {
+                count: this.gcCount,
+                lastGC: this.lastGC
+            },
+            system: systemInfo,
+            pressureLevel: this.getMemoryPressureLevel(),
+            recommendations: this.getRecommendations()
+        };
+    }
+
+    /**
      * Setup memory monitoring and event handlers
      */
     private setupMemoryMonitoring(): void {
@@ -260,13 +294,6 @@ export class MemoryManager extends EventEmitter {
     }
 
     /**
-     * Get total system memory
-     */
-    private getTotalSystemMemory(): number {
-        return os.totalmem();
-    }
-
-    /**
      * Format bytes in human-readable format
      */
     private formatBytes(bytes: number): string {
@@ -280,50 +307,5 @@ export class MemoryManager extends EventEmitter {
         }
 
         return `${value.toFixed(1)}${units[unitIndex]}`;
-    }
-
-    /**
-     * Get memory pressure level
-     */
-    getMemoryPressureLevel(): 'low' | 'medium' | 'high' | 'critical' {
-        const current = this.getCurrentMemoryUsage();
-
-        if (current.heapUsed > this.thresholds.critical) {
-            return 'critical';
-        } else if (current.heapUsed > this.thresholds.warning) {
-            return 'high';
-        } else if (current.heapUsed > this.thresholds.cleanup) {
-            return 'medium';
-        } else {
-            return 'low';
-        }
-    }
-
-    /**
-     * Create memory snapshot for debugging
-     */
-    createSnapshot(): any {
-        const current = this.getCurrentMemoryUsage();
-        const systemInfo = {
-            totalMemory: os.totalmem(),
-            freeMemory: os.freemem(),
-            platform: os.platform(),
-            arch: os.arch(),
-            cpus: os.cpus().length
-        };
-
-        return {
-            timestamp: new Date().toISOString(),
-            memory: current,
-            peak: this.peakMemory,
-            thresholds: this.thresholds,
-            gcStats: {
-                count: this.gcCount,
-                lastGC: this.lastGC
-            },
-            system: systemInfo,
-            pressureLevel: this.getMemoryPressureLevel(),
-            recommendations: this.getRecommendations()
-        };
     }
 }

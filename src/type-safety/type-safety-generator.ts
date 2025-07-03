@@ -40,7 +40,7 @@ export class TypeSafetyGenerator {
 
     async generate(
         grammar: ParsedGrammar,
-        config: GLSPConfig,
+        _config: GLSPConfig,
         outputDir: string,
         options?: TypeSafetyOptions
     ): Promise<TypeSafetyResult> {

@@ -5,37 +5,37 @@ import { GLSPConfig } from '../config/types.js';
 import Handlebars from 'handlebars';
 
 export interface SupportingFilesOptions {
-    generateNpmIgnore?: boolean;
-    generateVscodeIgnore?: boolean;
-    generateChangelog?: boolean;
-    generateContributing?: boolean;
-    generateIssueTemplates?: boolean;
-    generatePullRequestTemplate?: boolean;
-    generateCodeOfConduct?: boolean;
-    generateSecurity?: boolean;
-    generateDockerfile?: boolean;
-    generateDependabot?: boolean;
+  generateNpmIgnore?: boolean;
+  generateVscodeIgnore?: boolean;
+  generateChangelog?: boolean;
+  generateContributing?: boolean;
+  generateIssueTemplates?: boolean;
+  generatePullRequestTemplate?: boolean;
+  generateCodeOfConduct?: boolean;
+  generateSecurity?: boolean;
+  generateDockerfile?: boolean;
+  generateDependabot?: boolean;
 }
 
 export class SupportingFilesGenerator {
-    private npmIgnoreTemplate!: HandlebarsTemplateDelegate;
-    private vscodeIgnoreTemplate!: HandlebarsTemplateDelegate;
-    private changelogTemplate!: HandlebarsTemplateDelegate;
-    private contributingTemplate!: HandlebarsTemplateDelegate;
-    private bugReportTemplate!: HandlebarsTemplateDelegate;
-    private featureRequestTemplate!: HandlebarsTemplateDelegate;
-    private pullRequestTemplate!: HandlebarsTemplateDelegate;
-    private codeOfConductTemplate!: HandlebarsTemplateDelegate;
-    private securityTemplate!: HandlebarsTemplateDelegate;
-    private dockerfileTemplate!: HandlebarsTemplateDelegate;
-    private dependabotTemplate!: HandlebarsTemplateDelegate;
-    
-    constructor() {
-        this.loadTemplates();
-    }
-    
-    private loadTemplates(): void {
-        this.npmIgnoreTemplate = Handlebars.compile(`# Source files
+  private npmIgnoreTemplate!: HandlebarsTemplateDelegate;
+  private vscodeIgnoreTemplate!: HandlebarsTemplateDelegate;
+  private changelogTemplate!: HandlebarsTemplateDelegate;
+  private contributingTemplate!: HandlebarsTemplateDelegate;
+  private bugReportTemplate!: HandlebarsTemplateDelegate;
+  private featureRequestTemplate!: HandlebarsTemplateDelegate;
+  private pullRequestTemplate!: HandlebarsTemplateDelegate;
+  private codeOfConductTemplate!: HandlebarsTemplateDelegate;
+  private securityTemplate!: HandlebarsTemplateDelegate;
+  private dockerfileTemplate!: HandlebarsTemplateDelegate;
+  private dependabotTemplate!: HandlebarsTemplateDelegate;
+
+  constructor() {
+    this.loadTemplates();
+  }
+
+  private loadTemplates(): void {
+    this.npmIgnoreTemplate = Handlebars.compile(`# Source files
 src/
 scripts/
 test/
@@ -98,7 +98,7 @@ package-lock.json
 pnpm-lock.yaml
 `);
 
-        this.vscodeIgnoreTemplate = Handlebars.compile(`# Ignore everything by default
+    this.vscodeIgnoreTemplate = Handlebars.compile(`# Ignore everything by default
 **
 
 # Include specific files for VS Code extension
@@ -141,7 +141,7 @@ tsconfig.json
 webpack.config.js
 `);
 
-        this.changelogTemplate = Handlebars.compile(`# Changelog
+    this.changelogTemplate = Handlebars.compile(`# Changelog
 
 All notable changes to {{projectName}} will be documented in this file.
 
@@ -185,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.0]: https://github.com/{{githubOrg}}/{{projectName}}/releases/tag/v0.1.0
 `);
 
-        this.contributingTemplate = Handlebars.compile(`# Contributing to {{projectName}}
+    this.contributingTemplate = Handlebars.compile(`# Contributing to {{projectName}}
 
 Thank you for your interest in contributing to {{projectName}}! This document provides guidelines and instructions for contributing.
 
@@ -323,7 +323,7 @@ We follow Semantic Versioning:
 Thank you for contributing! 🎉
 `);
 
-        this.bugReportTemplate = Handlebars.compile(`---
+    this.bugReportTemplate = Handlebars.compile(`---
 name: Bug Report
 about: Create a report to help us improve
 title: '[BUG] '
@@ -368,7 +368,7 @@ Add any other context about the problem here.
 If you have suggestions on how to fix the bug, please describe them here.
 `);
 
-        this.featureRequestTemplate = Handlebars.compile(`---
+    this.featureRequestTemplate = Handlebars.compile(`---
 name: Feature Request
 about: Suggest an idea for this project
 title: '[FEATURE] '
@@ -400,7 +400,7 @@ If you have ideas on how to implement this feature, please share them.
 - [ ] Criteria 3
 `);
 
-        this.pullRequestTemplate = Handlebars.compile(`## Description
+    this.pullRequestTemplate = Handlebars.compile(`## Description
 Brief description of what this PR does.
 
 ## Related Issue
@@ -442,7 +442,7 @@ Add screenshots to help reviewers understand the changes.
 Any additional information that might be helpful for reviewers.
 `);
 
-        this.codeOfConductTemplate = Handlebars.compile(`# Code of Conduct
+    this.codeOfConductTemplate = Handlebars.compile(`# Code of Conduct
 
 ## Our Pledge
 
@@ -501,7 +501,7 @@ version 2.1, available at
 [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
 `);
 
-        this.securityTemplate = Handlebars.compile(`# Security Policy
+    this.securityTemplate = Handlebars.compile(`# Security Policy
 
 ## Supported Versions
 
@@ -573,7 +573,7 @@ When using {{projectName}}:
 Thank you for helping keep {{projectName}} and its users safe!
 `);
 
-        this.dockerfileTemplate = Handlebars.compile(`# Build stage
+    this.dockerfileTemplate = Handlebars.compile(`# Build stage
 FROM node:{{nodeVersion}}-alpine AS builder
 
 WORKDIR /app
@@ -624,7 +624,7 @@ ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "lib/backend/main.js", "--hostname=0.0.0.0"]
 `);
 
-        this.dependabotTemplate = Handlebars.compile(`version: 2
+    this.dependabotTemplate = Handlebars.compile(`version: 2
 updates:
   # NPM dependencies
   - package-ecosystem: "npm"
@@ -673,123 +673,123 @@ updates:
       - "dependencies"
       - "docker"
 `);
+  }
+
+  async generate(
+    grammar: ParsedGrammar,
+    _config: GLSPConfig,
+    outputDir: string,
+    options: SupportingFilesOptions = {}
+  ): Promise<string[]> {
+    const opts = {
+      generateNpmIgnore: true,
+      generateVscodeIgnore: true,
+      generateChangelog: true,
+      generateContributing: true,
+      generateIssueTemplates: true,
+      generatePullRequestTemplate: true,
+      generateCodeOfConduct: true,
+      generateSecurity: true,
+      generateDockerfile: true,
+      generateDependabot: true,
+      ...options
+    };
+
+    const generatedFiles: string[] = [];
+    const templateData = {
+      projectName: grammar.projectName,
+      githubOrg: 'your-org', // TODO: Make configurable
+      contactEmail: 'contact@example.com',
+      securityEmail: 'security@example.com',
+      nodeVersion: '18',
+      majorVersion: '1',
+      coverageThreshold: 80,
+      currentDate: new Date().toISOString().split('T')[0]
+    };
+
+    // Generate .npmignore
+    if (opts.generateNpmIgnore) {
+      const npmIgnorePath = path.join(outputDir, '.npmignore');
+      const content = this.npmIgnoreTemplate({});
+      await fs.writeFile(npmIgnorePath, content);
+      generatedFiles.push(npmIgnorePath);
     }
-    
-    async generate(
-        grammar: ParsedGrammar,
-        config: GLSPConfig,
-        outputDir: string,
-        options: SupportingFilesOptions = {}
-    ): Promise<string[]> {
-        const opts = {
-            generateNpmIgnore: true,
-            generateVscodeIgnore: true,
-            generateChangelog: true,
-            generateContributing: true,
-            generateIssueTemplates: true,
-            generatePullRequestTemplate: true,
-            generateCodeOfConduct: true,
-            generateSecurity: true,
-            generateDockerfile: true,
-            generateDependabot: true,
-            ...options
-        };
-        
-        const generatedFiles: string[] = [];
-        const templateData = {
-            projectName: grammar.projectName,
-            githubOrg: 'your-org', // TODO: Make configurable
-            contactEmail: 'contact@example.com',
-            securityEmail: 'security@example.com',
-            nodeVersion: '18',
-            majorVersion: '1',
-            coverageThreshold: 80,
-            currentDate: new Date().toISOString().split('T')[0]
-        };
-        
-        // Generate .npmignore
-        if (opts.generateNpmIgnore) {
-            const npmIgnorePath = path.join(outputDir, '.npmignore');
-            const content = this.npmIgnoreTemplate({});
-            await fs.writeFile(npmIgnorePath, content);
-            generatedFiles.push(npmIgnorePath);
-        }
-        
-        // Generate .vscodeignore
-        if (opts.generateVscodeIgnore) {
-            const vscodeIgnorePath = path.join(outputDir, '.vscodeignore');
-            const content = this.vscodeIgnoreTemplate({});
-            await fs.writeFile(vscodeIgnorePath, content);
-            generatedFiles.push(vscodeIgnorePath);
-        }
-        
-        // Generate CHANGELOG.md
-        if (opts.generateChangelog) {
-            const changelogPath = path.join(outputDir, 'CHANGELOG.md');
-            const content = this.changelogTemplate(templateData);
-            await fs.writeFile(changelogPath, content);
-            generatedFiles.push(changelogPath);
-        }
-        
-        // Generate CONTRIBUTING.md
-        if (opts.generateContributing) {
-            const contributingPath = path.join(outputDir, 'CONTRIBUTING.md');
-            const content = this.contributingTemplate(templateData);
-            await fs.writeFile(contributingPath, content);
-            generatedFiles.push(contributingPath);
-        }
-        
-        // Generate issue templates
-        if (opts.generateIssueTemplates) {
-            const issueTemplatesDir = path.join(outputDir, '.github', 'ISSUE_TEMPLATE');
-            await fs.ensureDir(issueTemplatesDir);
-            
-            const bugReportPath = path.join(issueTemplatesDir, 'bug_report.md');
-            const bugContent = this.bugReportTemplate(templateData);
-            await fs.writeFile(bugReportPath, bugContent);
-            generatedFiles.push(bugReportPath);
-            
-            const featureRequestPath = path.join(issueTemplatesDir, 'feature_request.md');
-            const featureContent = this.featureRequestTemplate(templateData);
-            await fs.writeFile(featureRequestPath, featureContent);
-            generatedFiles.push(featureRequestPath);
-        }
-        
-        // Generate pull request template
-        if (opts.generatePullRequestTemplate) {
-            const prTemplatePath = path.join(outputDir, '.github', 'pull_request_template.md');
-            await fs.ensureDir(path.dirname(prTemplatePath));
-            const content = this.pullRequestTemplate(templateData);
-            await fs.writeFile(prTemplatePath, content);
-            generatedFiles.push(prTemplatePath);
-        }
-        
-        // Generate CODE_OF_CONDUCT.md
-        if (opts.generateCodeOfConduct) {
-            const cocPath = path.join(outputDir, 'CODE_OF_CONDUCT.md');
-            const content = this.codeOfConductTemplate(templateData);
-            await fs.writeFile(cocPath, content);
-            generatedFiles.push(cocPath);
-        }
-        
-        // Generate SECURITY.md
-        if (opts.generateSecurity) {
-            const securityPath = path.join(outputDir, 'SECURITY.md');
-            const content = this.securityTemplate(templateData);
-            await fs.writeFile(securityPath, content);
-            generatedFiles.push(securityPath);
-        }
-        
-        // Generate Dockerfile
-        if (opts.generateDockerfile) {
-            const dockerfilePath = path.join(outputDir, 'Dockerfile');
-            const content = this.dockerfileTemplate(templateData);
-            await fs.writeFile(dockerfilePath, content);
-            generatedFiles.push(dockerfilePath);
-            
-            // Also generate .dockerignore
-            const dockerignorePath = path.join(outputDir, '.dockerignore');
-            const dockerignoreContent = `node_modules
+
+    // Generate .vscodeignore
+    if (opts.generateVscodeIgnore) {
+      const vscodeIgnorePath = path.join(outputDir, '.vscodeignore');
+      const content = this.vscodeIgnoreTemplate({});
+      await fs.writeFile(vscodeIgnorePath, content);
+      generatedFiles.push(vscodeIgnorePath);
+    }
+
+    // Generate CHANGELOG.md
+    if (opts.generateChangelog) {
+      const changelogPath = path.join(outputDir, 'CHANGELOG.md');
+      const content = this.changelogTemplate(templateData);
+      await fs.writeFile(changelogPath, content);
+      generatedFiles.push(changelogPath);
+    }
+
+    // Generate CONTRIBUTING.md
+    if (opts.generateContributing) {
+      const contributingPath = path.join(outputDir, 'CONTRIBUTING.md');
+      const content = this.contributingTemplate(templateData);
+      await fs.writeFile(contributingPath, content);
+      generatedFiles.push(contributingPath);
+    }
+
+    // Generate issue templates
+    if (opts.generateIssueTemplates) {
+      const issueTemplatesDir = path.join(outputDir, '.github', 'ISSUE_TEMPLATE');
+      await fs.ensureDir(issueTemplatesDir);
+
+      const bugReportPath = path.join(issueTemplatesDir, 'bug_report.md');
+      const bugContent = this.bugReportTemplate(templateData);
+      await fs.writeFile(bugReportPath, bugContent);
+      generatedFiles.push(bugReportPath);
+
+      const featureRequestPath = path.join(issueTemplatesDir, 'feature_request.md');
+      const featureContent = this.featureRequestTemplate(templateData);
+      await fs.writeFile(featureRequestPath, featureContent);
+      generatedFiles.push(featureRequestPath);
+    }
+
+    // Generate pull request template
+    if (opts.generatePullRequestTemplate) {
+      const prTemplatePath = path.join(outputDir, '.github', 'pull_request_template.md');
+      await fs.ensureDir(path.dirname(prTemplatePath));
+      const content = this.pullRequestTemplate(templateData);
+      await fs.writeFile(prTemplatePath, content);
+      generatedFiles.push(prTemplatePath);
+    }
+
+    // Generate CODE_OF_CONDUCT.md
+    if (opts.generateCodeOfConduct) {
+      const cocPath = path.join(outputDir, 'CODE_OF_CONDUCT.md');
+      const content = this.codeOfConductTemplate(templateData);
+      await fs.writeFile(cocPath, content);
+      generatedFiles.push(cocPath);
+    }
+
+    // Generate SECURITY.md
+    if (opts.generateSecurity) {
+      const securityPath = path.join(outputDir, 'SECURITY.md');
+      const content = this.securityTemplate(templateData);
+      await fs.writeFile(securityPath, content);
+      generatedFiles.push(securityPath);
+    }
+
+    // Generate Dockerfile
+    if (opts.generateDockerfile) {
+      const dockerfilePath = path.join(outputDir, 'Dockerfile');
+      const content = this.dockerfileTemplate(templateData);
+      await fs.writeFile(dockerfilePath, content);
+      generatedFiles.push(dockerfilePath);
+
+      // Also generate .dockerignore
+      const dockerignorePath = path.join(outputDir, '.dockerignore');
+      const dockerignoreContent = `node_modules
 .git
 .github
 coverage
@@ -802,19 +802,19 @@ docs
 .vscode
 .idea
 `;
-            await fs.writeFile(dockerignorePath, dockerignoreContent);
-            generatedFiles.push(dockerignorePath);
-        }
-        
-        // Generate Dependabot config
-        if (opts.generateDependabot) {
-            const dependabotPath = path.join(outputDir, '.github', 'dependabot.yml');
-            await fs.ensureDir(path.dirname(dependabotPath));
-            const content = this.dependabotTemplate(templateData);
-            await fs.writeFile(dependabotPath, content);
-            generatedFiles.push(dependabotPath);
-        }
-        
-        return generatedFiles;
+      await fs.writeFile(dockerignorePath, dockerignoreContent);
+      generatedFiles.push(dockerignorePath);
     }
+
+    // Generate Dependabot config
+    if (opts.generateDependabot) {
+      const dependabotPath = path.join(outputDir, '.github', 'dependabot.yml');
+      await fs.ensureDir(path.dirname(dependabotPath));
+      const content = this.dependabotTemplate(templateData);
+      await fs.writeFile(dependabotPath, content);
+      generatedFiles.push(dependabotPath);
+    }
+
+    return generatedFiles;
+  }
 }

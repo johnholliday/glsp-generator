@@ -72,10 +72,10 @@ export class TemplateSystem {
      */
     private setupInheritance(templateSet: TemplateSet): void {
         // Register layouts found in templates
-        for (const [name, template] of templateSet.templates) {
+        for (const [name, _template] of templateSet.templates) {
             if (name.startsWith('layouts/') || name.includes('layout')) {
                 // This template is a layout - register it
-                const layoutName = name.replace(/^layouts\//, '').replace(/\.hbs$/, '');
+                // const layoutName = name.replace(/^layouts\//, '').replace(/\.hbs$/, '');
                 // TODO: Get the raw template string, not the compiled version
                 // this.inheritance.registerLayout(layoutName, templateString);
             }

@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarProperty } from '../types/grammar.js';
+import { ParsedGrammar, GrammarInterface } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface UnitTestGeneratorOptions {
@@ -15,12 +15,12 @@ export class UnitTestGenerator {
     private modelTestTemplate!: HandlebarsTemplateDelegate;
     private validationTestTemplate!: HandlebarsTemplateDelegate;
     private typeGuardTestTemplate!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplates();
         this.registerHelpers();
     }
-    
+
     private loadTemplates(): void {
         this.modelTestTemplate = Handlebars.compile(`import { describe, test, expect, beforeEach } from 'vitest';
 import type { {{interfaceName}} } from '../../src/common/{{projectName}}-model';
@@ -389,22 +389,22 @@ describe('{{projectName}} Type Guards', () => {
 });
 `);
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('camelCase', (str: string) => {
             return str.charAt(0).toLowerCase() + str.slice(1);
         });
-        
+
         Handlebars.registerHelper('kebabCase', (str: string) => {
             return str
                 .replace(/([A-Z])/g, '-$1')
                 .toLowerCase()
                 .replace(/^-/, '');
         });
-        
+
         Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -418,19 +418,19 @@ describe('{{projectName}} Type Guards', () => {
             coverage: 80,
             ...options
         };
-        
+
         const generatedFiles: string[] = [];
-        
+
         // Create test directories
         const unitTestDir = path.join(outputDir, 'src', 'test', 'unit');
         const modelTestDir = path.join(unitTestDir, 'model');
         const validationTestDir = path.join(unitTestDir, 'validation');
         const utilsTestDir = path.join(unitTestDir, 'utils');
-        
+
         await fs.ensureDir(modelTestDir);
         await fs.ensureDir(validationTestDir);
         await fs.ensureDir(utilsTestDir);
-        
+
         // Generate model tests
         if (opts.generateModelTests) {
             for (const iface of grammar.interfaces) {
@@ -440,7 +440,7 @@ describe('{{projectName}} Type Guards', () => {
                 generatedFiles.push(testPath);
             }
         }
-        
+
         // Generate validation tests
         if (opts.generateValidationTests) {
             const testPath = path.join(validationTestDir, 'validators.test.ts');
@@ -448,7 +448,7 @@ describe('{{projectName}} Type Guards', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         // Generate type guard tests
         if (opts.generateTypeGuardTests) {
             const testPath = path.join(utilsTestDir, 'type-guards.test.ts');
@@ -456,10 +456,10 @@ describe('{{projectName}} Type Guards', () => {
             await fs.writeFile(testPath, content);
             generatedFiles.push(testPath);
         }
-        
+
         return generatedFiles;
     }
-    
+
     private generateModelTest(iface: GrammarInterface, grammar: ParsedGrammar): string {
         const requiredProperties = iface.properties.filter(p => !p.optional);
         const optionalProperties = iface.properties.filter(p => p.optional);
@@ -467,11 +467,11 @@ describe('{{projectName}} Type Guards', () => {
         const stringProperties = iface.properties.filter(p => p.type === 'string' && !p.array);
         const numberProperties = iface.properties.filter(p => p.type === 'number' && !p.array);
         const booleanProperties = iface.properties.filter(p => p.type === 'boolean' && !p.array);
-        
-        const hasReferences = iface.properties.some(p => 
+
+        const hasReferences = iface.properties.some(p =>
             !['string', 'number', 'boolean'].includes(p.type)
         );
-        
+
         const data = {
             projectName: grammar.projectName,
             interfaceName: iface.name,
@@ -488,20 +488,20 @@ describe('{{projectName}} Type Guards', () => {
             discriminatorField: 'type',
             discriminatorValue: iface.name.toLowerCase()
         };
-        
+
         return this.modelTestTemplate(data);
     }
-    
+
     private generateValidationTest(grammar: ParsedGrammar): string {
         const data = {
             projectName: grammar.projectName,
             interfaces: grammar.interfaces,
             interfaceNames: grammar.interfaces.map(i => i.name).join(', ')
         };
-        
+
         return this.validationTestTemplate(data);
     }
-    
+
     private generateTypeGuardTest(grammar: ParsedGrammar): string {
         const data = {
             projectName: grammar.projectName,
@@ -511,10 +511,10 @@ describe('{{projectName}} Type Guards', () => {
             discriminatorField: 'type',
             discriminatorValue: grammar.interfaces[0]?.name.toLowerCase() || 'node'
         };
-        
+
         return this.typeGuardTestTemplate(data);
     }
-    
+
     private kebabCase(str: string): string {
         return str
             .replace(/([A-Z])/g, '-$1')

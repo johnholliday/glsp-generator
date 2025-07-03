@@ -1,66 +1,115 @@
-import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar } from '../types/grammar.js';
-import { DocumentationRenderer } from './renderer.js';
-import { DocumentationCollector } from './collector.js';
+import { injectable, inject } from 'inversify';
+import 'reflect-metadata';
+import {
+    IDocumentationRenderer,
+    IDocumentationCollector,
+    IDocumentationConfig,
+    IFileSystemService,
+    TYPES
+} from './interfaces.js';
 
+/**
+ * Documentation generator that uses constructor-based dependency injection
+ * to resolve and inject instances of DocumentationRenderer and DocumentationCollector interfaces.
+ * 
+ * This implementation ensures:
+ * - Loose coupling between components through interface-based dependencies
+ * - Testability through mock injection capabilities
+ * - Multiple implementation strategies for rendering and collection operations
+ * - Single responsibility principle by delegating specific concerns to injected dependencies
+ * - Runtime configuration of documentation generation behavior through IoC container
+ */
+@injectable()
 export class DocumentationGenerator {
-    private readonly renderer: DocumentationRenderer;
-    private readonly collector: DocumentationCollector;
 
+    /**
+     * Creates a new DocumentationGenerator with injected dependencies
+     * 
+     * @param renderer - Documentation rendering service implementing IDocumentationRenderer
+     * @param collector - Documentation data collection service implementing IDocumentationCollector
+     * @param config - Configuration object containing generation settings
+     * @param fileSystem - File system operations service implementing IFileSystemService
+     */
     constructor(
-        private readonly config: any = {},
-        private readonly outputDir: string = '.'
-    ) {
-        this.renderer = new DocumentationRenderer(config);
-        this.collector = new DocumentationCollector(config);
-    }
+        @inject(TYPES.IDocumentationRenderer) private readonly renderer: IDocumentationRenderer,
+        @inject(TYPES.IDocumentationCollector) private readonly collector: IDocumentationCollector,
+        @inject(TYPES.IDocumentationConfig) private readonly config: IDocumentationConfig,
+        @inject(TYPES.IFileSystemService) private readonly fileSystem: IFileSystemService
+    ) { }
 
+    /**
+     * Generates complete documentation by orchestrating data collection and rendering operations
+     * 
+     * @returns Promise that resolves when documentation generation is complete
+     */
     async generate(): Promise<void> {
         console.log('Generating documentation...');
-        
-        // Ensure output directory exists
-        fs.mkdirSync(this.outputDir, { recursive: true });
 
-        // Collect documentation data
+        const outputDir = this.config.outputDir || '.';
+
+        // Ensure output directory exists
+        await this.fileSystem.ensureDir(outputDir);
+
+        // Collect documentation data using injected collector
         const docData = await this.collector.collect();
 
-        // Generate overview documentation
-        await this.generateOverview(docData);
+        // Generate all documentation sections using injected renderer
+        await Promise.all([
+            this.generateOverview(docData, outputDir),
+            this.generateAPI(docData, outputDir),
+            this.generateArchitecture(docData, outputDir),
+            this.generateExamples(docData, outputDir)
+        ]);
 
-        // Generate API documentation
-        await this.generateAPI(docData);
-
-        // Generate architecture documentation
-        await this.generateArchitecture(docData);
-
-        // Generate examples documentation
-        await this.generateExamples(docData);
-
-        console.log(`Documentation generated in ${this.outputDir}`);
+        console.log(`Documentation generated in ${outputDir}`);
     }
 
-    private async generateOverview(docData: any): Promise<void> {
+    /**
+     * Generates overview documentation section
+     * 
+     * @param docData - Collected documentation data
+     * @param outputDir - Output directory path
+     */
+    private async generateOverview(docData: any, outputDir: string): Promise<void> {
         const content = await this.renderer.renderOverview(docData);
-        const outputPath = path.join(this.outputDir, 'README.md');
-        fs.writeFileSync(outputPath, content);
+        const outputPath = path.join(outputDir, 'README.md');
+        await this.fileSystem.writeFile(outputPath, content);
     }
 
-    private async generateAPI(docData: any): Promise<void> {
+    /**
+     * Generates API documentation section
+     * 
+     * @param docData - Collected documentation data
+     * @param outputDir - Output directory path
+     */
+    private async generateAPI(docData: any, outputDir: string): Promise<void> {
         const content = await this.renderer.renderAPI(docData);
-        const outputPath = path.join(this.outputDir, 'api.md');
-        fs.writeFileSync(outputPath, content);
+        const outputPath = path.join(outputDir, 'api.md');
+        await this.fileSystem.writeFile(outputPath, content);
     }
 
-    private async generateArchitecture(docData: any): Promise<void> {
+    /**
+     * Generates architecture documentation section
+     * 
+     * @param docData - Collected documentation data
+     * @param outputDir - Output directory path
+     */
+    private async generateArchitecture(docData: any, outputDir: string): Promise<void> {
         const content = await this.renderer.renderArchitecture(docData);
-        const outputPath = path.join(this.outputDir, 'architecture.md');
-        fs.writeFileSync(outputPath, content);
+        const outputPath = path.join(outputDir, 'architecture.md');
+        await this.fileSystem.writeFile(outputPath, content);
     }
 
-    private async generateExamples(docData: any): Promise<void> {
+    /**
+     * Generates examples documentation section
+     * 
+     * @param docData - Collected documentation data
+     * @param outputDir - Output directory path
+     */
+    private async generateExamples(docData: any, outputDir: string): Promise<void> {
         const content = await this.renderer.renderExamples(docData);
-        const outputPath = path.join(this.outputDir, 'examples.md');
-        fs.writeFileSync(outputPath, content);
+        const outputPath = path.join(outputDir, 'examples.md');
+        await this.fileSystem.writeFile(outputPath, content);
     }
 }

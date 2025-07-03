@@ -1,8 +1,3 @@
-import fs from 'fs-extra';
-import * as path from 'path';
-import * as ts from 'typescript';
-import { ParsedGrammar } from '../types/grammar.js';
-
 export interface DocumentationData {
     overview: OverviewData;
     api: APIData;
@@ -88,8 +83,14 @@ export interface ExampleData {
     language: string;
 }
 
-export class DocumentationCollector {
-    constructor(private readonly config: any) {}
+import { injectable, inject } from 'inversify';
+import { IDocumentationCollector, IDocumentationConfig, TYPES } from './interfaces.js';
+
+@injectable()
+export class DocumentationCollector implements IDocumentationCollector {
+    constructor(
+        @inject(TYPES.IDocumentationConfig) private readonly config: IDocumentationConfig
+    ) { }
 
     async collect(): Promise<DocumentationData> {
         return {

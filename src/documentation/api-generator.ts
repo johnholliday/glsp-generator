@@ -161,19 +161,19 @@ export class APIDocumentationGenerator {
         }));
     }
 
-    private collectServerAPIDocs(grammar: ParsedGrammar, config: GLSPConfig): ServerAPIDoc {
+    private collectServerAPIDocs(_grammar: ParsedGrammar, _config: GLSPConfig): ServerAPIDoc {
         return {
-            handlers: this.generateHandlerDocs(grammar),
-            commands: this.generateServerCommandDocs(grammar),
-            validators: this.generateValidatorDocs(grammar)
+            handlers: this.generateHandlerDocs(_grammar),
+            commands: this.generateServerCommandDocs(_grammar),
+            validators: this.generateValidatorDocs(_grammar)
         };
     }
 
-    private collectClientAPIDocs(grammar: ParsedGrammar, config: GLSPConfig): ClientAPIDoc {
+    private collectClientAPIDocs(_grammar: ParsedGrammar, _config: GLSPConfig): ClientAPIDoc {
         return {
-            commands: this.generateClientCommandDocs(grammar),
-            views: this.generateViewDocs(grammar),
-            actions: this.generateActionDocs(grammar)
+            commands: this.generateClientCommandDocs(_grammar),
+            views: this.generateViewDocs(_grammar),
+            actions: this.generateActionDocs(_grammar)
         };
     }
 
@@ -405,7 +405,7 @@ ${prop.name}${prop.optional ? '?' : ''}: ${prop.type}${prop.array ? '[]' : ''};`
     private generateInterfaceMethods(iface: ParsedInterface): MethodAPIDoc[] {
         // Generate common methods based on interface type
         const methods: MethodAPIDoc[] = [];
-        
+
         if (iface.name.toLowerCase().includes('node')) {
             methods.push({
                 name: 'getConnectedEdges',
@@ -430,9 +430,9 @@ ${prop.name}${prop.optional ? '?' : ''}: ${prop.type}${prop.array ? '[]' : ''};`
         examples.push({
             title: `Creating a ${iface.name}`,
             code: `const ${iface.name.toLowerCase()}: ${iface.name} = {
-${iface.properties.filter(p => !p.optional).map(p => 
-    `    ${p.name}: ${this.getExampleValue(p.type, p.array)}`
-).join(',\n')}
+${iface.properties.filter(p => !p.optional).map(p =>
+                `    ${p.name}: ${this.getExampleValue(p.type, p.array)}`
+            ).join(',\n')}
 };`,
             language: 'typescript'
         });
@@ -441,9 +441,9 @@ ${iface.properties.filter(p => !p.optional).map(p =>
         examples.push({
             title: `Validating a ${iface.name}`,
             code: `function validate${iface.name}(obj: ${iface.name}): boolean {
-    return ${iface.properties.filter(p => !p.optional).map(p => 
-        `obj.${p.name} !== undefined`
-    ).join(' && ')};
+    return ${iface.properties.filter(p => !p.optional).map(p =>
+                `obj.${p.name} !== undefined`
+            ).join(' && ')};
 }`,
             language: 'typescript'
         });
@@ -490,7 +490,7 @@ function is${type.name}(value: string): value is ${type.name} {
         }));
     }
 
-    private generateServerCommandDocs(grammar: ParsedGrammar): CommandDoc[] {
+    private generateServerCommandDocs(_grammar: ParsedGrammar): CommandDoc[] {
         return [{
             id: 'server.validate',
             label: 'Validate Model',
@@ -498,7 +498,7 @@ function is${type.name}(value: string): value is ${type.name} {
         }];
     }
 
-    private generateValidatorDocs(grammar: ParsedGrammar): ValidatorDoc[] {
+    private generateValidatorDocs(_grammar: ParsedGrammar): ValidatorDoc[] {
         return [{
             name: 'ModelValidator',
             validates: 'All model elements',
@@ -519,7 +519,7 @@ function is${type.name}(value: string): value is ${type.name} {
         }));
     }
 
-    private generateViewDocs(grammar: ParsedGrammar): ViewDoc[] {
+    private generateViewDocs(_grammar: ParsedGrammar): ViewDoc[] {
         return [{
             id: 'modelExplorer',
             name: 'Model Explorer',
@@ -531,7 +531,7 @@ function is${type.name}(value: string): value is ${type.name} {
         }];
     }
 
-    private generateActionDocs(grammar: ParsedGrammar): ActionDoc[] {
+    private generateActionDocs(_grammar: ParsedGrammar): ActionDoc[] {
         return [{
             kind: 'create',
             description: 'Actions for creating new elements'
@@ -545,9 +545,9 @@ function is${type.name}(value: string): value is ${type.name} {
     }
 
     private getExampleValue(type: string, isArray: boolean): string {
-        const base = type === 'string' ? '"value"' : 
-                    type === 'number' ? '42' :
-                    type === 'boolean' ? 'true' : 
+        const base = type === 'string' ? '"value"' :
+            type === 'number' ? '42' :
+                type === 'boolean' ? 'true' :
                     `${type}Value`;
         return isArray ? `[${base}]` : base;
     }

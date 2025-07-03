@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import {
     Phase,
     ProgressOptions,
-    MemoryUsage,
     PerformanceConfig
 } from './types';
 
@@ -38,7 +37,7 @@ export class GenerationProgress {
     constructor(
         private phases: Phase[] = [],
         private options: ProgressOptions = {},
-        private config: PerformanceConfig = {}
+        private config: PerformanceConfig = {} // eslint-disable-line @typescript-eslint/no-unused-vars
     ) {
         this.etaCalculator = new SimpleETACalculator();
         this.verbose = config.profileMode || false;
@@ -427,7 +426,7 @@ export class SimpleETACalculator implements ETACalculator {
     private samples: Array<{ time: number; progress: number }> = [];
     private maxSamples = 10;
 
-    update(current: number, total: number): void {
+    update(current: number, _total: number): void {
         const now = Date.now();
         this.samples.push({ time: now, progress: current });
 

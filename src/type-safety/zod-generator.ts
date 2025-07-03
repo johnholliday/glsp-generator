@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarProperty, GrammarType } from '../types/grammar.js';
+import { ParsedGrammar, GrammarInterface } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface ZodGeneratorOptions {
@@ -12,12 +12,12 @@ export interface ZodGeneratorOptions {
 
 export class ZodGenerator {
     private template!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplate();
         this.registerHelpers();
     }
-    
+
     private loadTemplate(): void {
         const templateContent = `/**
  * Zod schemas for {{projectName}}
@@ -156,10 +156,10 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
 
         this.template = Handlebars.compile(templateContent, { noEscape: true });
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
-        
+
         Handlebars.registerHelper('zodType', (type: string) => {
             const typeMap: Record<string, string> = {
                 'string': 'string',
@@ -171,7 +171,7 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
             return typeMap[type] || 'string';
         });
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -184,13 +184,13 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
             generateBrandedSchemas: true,
             ...options
         };
-        
+
         const typesDir = path.join(outputDir, 'src', 'types');
         await fs.ensureDir(typesDir);
-        
+
         // Collect branded types
         const brandedTypes = this.collectBrandedTypes(grammar);
-        
+
         // Prepare template data
         const data = {
             projectName: grammar.projectName,
@@ -200,19 +200,19 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
             unionTypeName: `${this.toPascalCase(grammar.projectName)}Node`,
             ...opts
         };
-        
+
         // Generate schemas file
         const content = this.template(data);
         const outputPath = path.join(typesDir, `${grammar.projectName}-schemas.ts`);
         await fs.writeFile(outputPath, content);
-        
+
         // Generate package.json update for zod dependency
         await this.updatePackageJson(outputDir);
     }
-    
+
     private collectBrandedTypes(grammar: ParsedGrammar): Array<{ name: string; baseType: string; validation?: string }> {
         const brandedTypes: Array<{ name: string; baseType: string; validation?: string }> = [];
-        
+
         grammar.interfaces.forEach(iface => {
             iface.properties.forEach(prop => {
                 if (prop.name.endsWith('Id') || prop.name.endsWith('Reference')) {
@@ -227,10 +227,10 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
                 }
             });
         });
-        
+
         return brandedTypes;
     }
-    
+
     private prepareInterfaces(interfaces: GrammarInterface[]): any[] {
         return interfaces.map(iface => ({
             ...iface,
@@ -240,7 +240,7 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
             }))
         }));
     }
-    
+
     private mapToZodType(type: string): string {
         const typeMap: Record<string, string> = {
             'string': 'z.string()',
@@ -250,27 +250,27 @@ export function getValidationErrors(schema: z.ZodSchema, data: unknown): string[
             'int': 'z.number().int()',
             'float': 'z.number()'
         };
-        
+
         return typeMap[type] || `${type}Schema`;
     }
-    
+
     private async updatePackageJson(outputDir: string): Promise<void> {
         const packageJsonPath = path.join(outputDir, 'package.json');
-        
+
         if (await fs.pathExists(packageJsonPath)) {
             const packageJson = await fs.readJson(packageJsonPath);
-            
+
             if (!packageJson.dependencies) {
                 packageJson.dependencies = {};
             }
-            
+
             if (!packageJson.dependencies.zod) {
                 packageJson.dependencies.zod = '^3.22.4';
                 await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
             }
         }
     }
-    
+
     private toPascalCase(str: string): string {
         return str
             .replace(/([A-Z])/g, ' $1')

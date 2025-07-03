@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import * as path from 'path';
-import { ParsedGrammar, GrammarInterface, GrammarProperty, GrammarType } from '../types/grammar.js';
+import { ParsedGrammar, GrammarInterface, GrammarType } from '../types/grammar.js';
 import Handlebars from 'handlebars';
 
 export interface DeclarationGeneratorOptions {
@@ -12,12 +12,12 @@ export interface DeclarationGeneratorOptions {
 
 export class DeclarationGenerator {
     private template!: HandlebarsTemplateDelegate;
-    
+
     constructor() {
         this.loadTemplate();
         this.registerHelpers();
     }
-    
+
     private loadTemplate(): void {
         const templateContent = `{{#if generateJSDoc}}/**
  * Type definitions for {{projectName}}
@@ -113,17 +113,17 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
 
         this.template = Handlebars.compile(templateContent, { noEscape: true });
     }
-    
+
     private registerHelpers(): void {
         Handlebars.registerHelper('tsType', (type: string, isArray: boolean) => {
             const baseType = this.mapToTsType(type);
             return isArray ? `${baseType}[]` : baseType;
         });
-        
+
         Handlebars.registerHelper('camelCase', (str: string) => {
             return str.charAt(0).toLowerCase() + str.slice(1);
         });
-        
+
         Handlebars.registerHelper('typeValidation', (type: string) => {
             switch (type) {
                 case 'string': return "typeof value === 'string'";
@@ -133,7 +133,7 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
             }
         });
     }
-    
+
     private mapToTsType(type: string): string {
         const typeMap: Record<string, string> = {
             'ID': 'NodeId',
@@ -143,10 +143,10 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
             'int': 'number',
             'float': 'number'
         };
-        
+
         return typeMap[type] || type;
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
         outputDir: string,
@@ -159,13 +159,13 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
             generateJSDoc: true,
             ...options
         };
-        
+
         const typesDir = path.join(outputDir, 'src', 'types');
         await fs.ensureDir(typesDir);
-        
+
         // Collect branded types
         const brandedTypes = this.collectBrandedTypes(grammar);
-        
+
         // Prepare template data
         const data = {
             projectName: grammar.projectName,
@@ -175,19 +175,19 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
             discriminatorField: 'type',
             ...opts
         };
-        
+
         // Generate declaration file
         const content = this.template(data);
         const outputPath = path.join(typesDir, `${grammar.projectName}-types.d.ts`);
         await fs.writeFile(outputPath, content);
-        
+
         // Generate index file
         await this.generateIndexFile(grammar.projectName, typesDir);
     }
-    
+
     private collectBrandedTypes(grammar: ParsedGrammar): Array<{ name: string; baseType: string }> {
         const brandedTypes: Array<{ name: string; baseType: string }> = [];
-        
+
         // Look for ID-like properties that should be branded
         grammar.interfaces.forEach(iface => {
             iface.properties.forEach(prop => {
@@ -202,10 +202,10 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
                 }
             });
         });
-        
+
         return brandedTypes;
     }
-    
+
     private prepareInterfaces(interfaces: GrammarInterface[]): any[] {
         return interfaces.map(iface => ({
             ...iface,
@@ -217,14 +217,14 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
             discriminatorValue: iface.name.toLowerCase()
         }));
     }
-    
+
     private prepareTypes(types: GrammarType[]): any[] {
         return types.map(type => ({
             ...type,
             definition: this.formatTypeDefinition(type)
         }));
     }
-    
+
     private formatTypeDefinition(type: GrammarType): string {
         if (type.unionTypes && type.unionTypes.length > 0) {
             return type.unionTypes
@@ -233,7 +233,7 @@ export function is{{name}}(obj: unknown): obj is {{name}} {
         }
         return type.definition || 'unknown';
     }
-    
+
     private async generateIndexFile(projectName: string, outputDir: string): Promise<void> {
         const indexContent = `// Type definitions index
 export * from './${projectName}-types.js';
@@ -241,10 +241,10 @@ export * from './${projectName}-validators.js';
 export * from './${projectName}-guards.js';
 export * from './${projectName}-schemas.js';
 `;
-        
+
         await fs.writeFile(path.join(outputDir, 'index.ts'), indexContent);
     }
-    
+
     private toPascalCase(str: string): string {
         return str
             .replace(/([A-Z])/g, ' $1')

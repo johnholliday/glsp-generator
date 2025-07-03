@@ -30,7 +30,7 @@ export class TestGenerator {
     private e2eTestGenerator: E2ETestGenerator;
     private factoryGenerator: FactoryGenerator;
     private configGenerator: ConfigGenerator;
-    
+
     constructor() {
         this.unitTestGenerator = new UnitTestGenerator();
         this.integrationTestGenerator = new IntegrationTestGenerator();
@@ -38,19 +38,19 @@ export class TestGenerator {
         this.factoryGenerator = new FactoryGenerator();
         this.configGenerator = new ConfigGenerator();
     }
-    
+
     async generate(
         grammar: ParsedGrammar,
-        config: GLSPConfig,
+        _config: GLSPConfig,
         outputDir: string,
         options: TestGeneratorOptions = {}
     ): Promise<TestGeneratorResult> {
         const errors: string[] = [];
         const allGeneratedFiles: string[] = [];
-        
+
         try {
             console.log(chalk.blue('🧪 Generating test infrastructure...'));
-            
+
             // Default options
             const opts = {
                 unitTests: {
@@ -91,7 +91,7 @@ export class TestGenerator {
                     ...options.testConfig
                 }
             };
-            
+
             // Generate test configurations first
             console.log(chalk.gray('  • Generating test configurations...'));
             try {
@@ -102,7 +102,7 @@ export class TestGenerator {
                 errors.push(`Failed to generate test configurations: ${error}`);
                 console.log(chalk.red(`    ✗ Failed to generate test configurations`));
             }
-            
+
             // Generate test data factories
             console.log(chalk.gray('  • Generating test data factories...'));
             try {
@@ -113,7 +113,7 @@ export class TestGenerator {
                 errors.push(`Failed to generate test data factories: ${error}`);
                 console.log(chalk.red(`    ✗ Failed to generate test data factories`));
             }
-            
+
             // Generate unit tests
             console.log(chalk.gray('  • Generating unit tests...'));
             try {
@@ -124,7 +124,7 @@ export class TestGenerator {
                 errors.push(`Failed to generate unit tests: ${error}`);
                 console.log(chalk.red(`    ✗ Failed to generate unit tests`));
             }
-            
+
             // Generate integration tests
             console.log(chalk.gray('  • Generating integration tests...'));
             try {
@@ -135,7 +135,7 @@ export class TestGenerator {
                 errors.push(`Failed to generate integration tests: ${error}`);
                 console.log(chalk.red(`    ✗ Failed to generate integration tests`));
             }
-            
+
             // Generate E2E tests
             console.log(chalk.gray('  • Generating E2E tests...'));
             try {
@@ -146,19 +146,19 @@ export class TestGenerator {
                 errors.push(`Failed to generate E2E tests: ${error}`);
                 console.log(chalk.red(`    ✗ Failed to generate E2E tests`));
             }
-            
+
             // Create additional test support files
             await this.createTestSupportFiles(outputDir, grammar);
-            
+
             // Generate test summary
             await this.generateTestSummary(outputDir, allGeneratedFiles, opts);
-            
+
             return {
                 success: errors.length === 0,
                 filesGenerated: allGeneratedFiles,
                 errors: errors.length > 0 ? errors : undefined
             };
-            
+
         } catch (error) {
             errors.push(`Test generation failed: ${error}`);
             return {
@@ -168,12 +168,12 @@ export class TestGenerator {
             };
         }
     }
-    
-    private async createTestSupportFiles(outputDir: string, grammar: ParsedGrammar): Promise<void> {
+
+    private async createTestSupportFiles(outputDir: string, _grammar: ParsedGrammar): Promise<void> {
         // Create E2E global setup
         const e2eDir = path.join(outputDir, 'src', 'test', 'e2e');
         await fs.ensureDir(e2eDir);
-        
+
         const globalSetupContent = `import { chromium, FullConfig } from '@playwright/test';
 
 async function globalSetup(config: FullConfig) {
@@ -208,9 +208,9 @@ async function globalSetup(config: FullConfig) {
 
 export default globalSetup;
 `;
-        
+
         await fs.writeFile(path.join(e2eDir, 'global-setup.ts'), globalSetupContent);
-        
+
         const globalTeardownContent = `import { FullConfig } from '@playwright/test';
 
 async function globalTeardown(config: FullConfig) {
@@ -228,13 +228,13 @@ async function globalTeardown(config: FullConfig) {
 
 export default globalTeardown;
 `;
-        
+
         await fs.writeFile(path.join(e2eDir, 'global-teardown.ts'), globalTeardownContent);
-        
+
         // Create page objects directory
         const pageObjectsDir = path.join(e2eDir, 'page-objects');
         await fs.ensureDir(pageObjectsDir);
-        
+
         const basePageContent = `import { Page, Locator } from '@playwright/test';
 
 export abstract class BasePage {
@@ -270,13 +270,13 @@ export abstract class BasePage {
     }
 }
 `;
-        
+
         await fs.writeFile(path.join(pageObjectsDir, 'base-page.ts'), basePageContent);
-        
+
         // Create test utilities
         const utilsDir = path.join(outputDir, 'src', 'test', 'utils');
         await fs.ensureDir(utilsDir);
-        
+
         const testHelpersContent = `/**
  * Common test helper functions
  */
@@ -340,17 +340,17 @@ export class TestDataManager {
     }
 }
 `;
-        
+
         await fs.writeFile(path.join(utilsDir, 'test-helpers.ts'), testHelpersContent);
     }
-    
+
     private async generateTestSummary(
         outputDir: string,
         generatedFiles: string[],
         options: any
     ): Promise<void> {
         const summaryPath = path.join(outputDir, 'TEST_SUMMARY.md');
-        
+
         const summary = `# Test Infrastructure Summary
 
 ## Overview
@@ -487,7 +487,7 @@ Total test files generated: ${generatedFiles.length}
 
 ${generatedFiles.map(f => `- ${path.relative(outputDir, f)}`).join('\n')}
 `;
-        
+
         await fs.writeFile(summaryPath, summary);
     }
 }
