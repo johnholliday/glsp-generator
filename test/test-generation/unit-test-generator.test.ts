@@ -7,7 +7,7 @@ import { ParsedGrammar } from '../../src/types/grammar';
 
 describe('UnitTestGenerator', () => {
     let generator: UnitTestGenerator;
-    let tempDir: string;
+    let tempDir: string = '';
     
     beforeEach(async () => {
         generator = new UnitTestGenerator();

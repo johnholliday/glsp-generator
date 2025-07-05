@@ -1,0 +1,31 @@
+# Dockerfile for running Vitest UI
+FROM node:20-alpine
+
+# Install necessary dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git
+
+# Set working directory
+WORKDIR /app
+
+# Enable Corepack for Yarn Berry
+RUN corepack enable
+
+# Copy package files
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+
+# Install dependencies
+RUN yarn install --immutable
+
+# Copy source code and tests
+COPY . .
+
+# Expose the Vitest UI port
+EXPOSE 51204
+
+# Run Vitest UI
+CMD ["yarn", "test:ui", "--api.port", "51204", "--api.host", "0.0.0.0"]

@@ -113,10 +113,31 @@ export class TemplateLoader {
             });
         });
 
-        // Helper for converting to lowercase
-        this.handlebars.registerHelper('toLowerCase', (str: string) =>
-            str ? str.toLowerCase() : ''
-        );
+        // Helper for pluralizing words
+        this.handlebars.registerHelper('pluralize', (str: string) => {
+            if (!str) return '';
+            
+            // Handle common irregular plurals
+            const irregulars: Record<string, string> = {
+                'State': 'States',
+                'state': 'states',
+                'Transition': 'Transitions',
+                'transition': 'transitions',
+                'Property': 'Properties',
+                'property': 'properties'
+            };
+            
+            if (irregulars[str]) return irregulars[str];
+            
+            // Simple pluralization rules
+            if (str.endsWith('y')) {
+                return str.slice(0, -1) + 'ies';
+            } else if (str.endsWith('s') || str.endsWith('x') || str.endsWith('ch') || str.endsWith('sh')) {
+                return str + 'es';
+            } else {
+                return str + 's';
+            }
+        });
     }
 
     async loadTemplates(options: TemplateOptions = {}): Promise<TemplateLoadResult> {

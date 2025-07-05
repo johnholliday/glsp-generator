@@ -4,6 +4,7 @@ import { ILogger, ILoggerFactory, LoggerFactory } from '../../utils/logger/index
 import { ConfigLoader } from '../config-loader.js';
 import { LangiumGrammarParser } from '../../utils/langium-parser.js';
 import { getProjectRoot } from '../../utils/paths.js';
+import { GLSPGenerator } from '../../generator.js';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -31,9 +32,14 @@ export function setupMinimalContainer(): Container {
     .inSingletonScope();
 
   // Dynamic logger binding
-  container.bind<ILogger>(TYPES.Logger).toDynamicValue((context: any) => {
-    const factory = context.container.get(TYPES.LoggerFactory) as ILoggerFactory;
+  container.bind<ILogger>(TYPES.Logger).toDynamicValue((context) => {
+    const factory = container.get<ILoggerFactory>(TYPES.LoggerFactory);
     return factory.createLogger('CLI');
+  }).inTransientScope();
+  
+  // Also bind as ILoggerService for compatibility
+  container.bind<ILogger>(TYPES.ILoggerService).toDynamicValue((context) => {
+    return container.get<ILogger>(TYPES.Logger);
   }).inTransientScope();
 
   // Only bind services that are ready for DI
@@ -42,9 +48,7 @@ export function setupMinimalContainer(): Container {
 
   // Create GLSPGenerator factory that doesn't require all dependencies to be injectable
   container.bind(TYPES.GLSPGenerator).toDynamicValue(() => {
-    // For minimal container, we'll create a simplified factory that returns null
-    // This allows the CLI to work without requiring all DI dependencies
-    return null;
+    return new GLSPGenerator();
   }).inSingletonScope();
 
   return container;

@@ -1,6 +1,6 @@
 /**
- * Simplified Inversify container configuration for Inversify 7.x
- * Focuses on basic service registration without complex factory patterns
+ * Corrected Inversify container configuration
+ * This version uses the actual Inversify API correctly
  */
 
 import 'reflect-metadata';
@@ -43,11 +43,11 @@ import {
     MetricsService,
     HealthCheckService
 } from './services.js';
-import { LangiumGrammarParser } from '../../utils/langium-grammar-parser.refactored.js';
-import { GrammarLinter } from '../../validation/linter.refactored.js';
-import { TypeSafetyGenerator } from '../../type-safety/type-safety-generator.refactored.js';
-import { TestGenerator } from '../../test-generation/test-generator.refactored.js';
-import { TemplatePackageManager } from '../../templates/package-manager.refactored.js';
+import { LangiumGrammarParser } from '../../utils/langium-grammar-parser.js';
+import { GrammarLinter } from '../../validation/linter.js';
+import { TypeSafetyGenerator } from '../../type-safety/type-safety-generator.js';
+import { TestGenerator } from '../../test-generation/test-generator.js';
+import { TemplatePackageManager } from '../../templates/package-manager.js';
 import { GLSPGenerator } from '../../generator.js';
 import { DocumentationGenerator } from '../../documentation/documentation-generator.js';
 import { ValidationReporter } from '../../validation/reporter.js';
@@ -149,6 +149,7 @@ export const businessServicesModule = new ContainerModule(({ bind }) => {
     bind<IPerformanceOptimizerService>(TYPES.IPerformanceOptimizerService).to(PerformanceOptimizer).inSingletonScope();
 });
 
+
 /**
  * Mock services module for testing
  */
@@ -209,7 +210,7 @@ export function createInversifyContainer(options: InversifyContainerOptions = {}
 }
 
 /**
- * Create development container
+ * Create development container with enhanced debugging
  */
 export function createDevelopmentContainer(): Container {
     return createInversifyContainer({
@@ -284,6 +285,7 @@ export async function validateInversifyContainer(container: Container): Promise<
                 errors.push(`Failed to resolve business service ${String(serviceType)}: ${error}`);
             }
         }
+
 
         // Run health checks if available
         if (container.isBound(TYPES.IHealthCheckService)) {
@@ -362,119 +364,4 @@ export async function disposeGlobalInversifyContainer(): Promise<void> {
         globalContainer.unbindAll();
         globalContainer = null;
     }
-}
-
-/**
- * Usage examples for the Inversify container
- */
-export const InversifyUsageExamples = {
-    /**
-     * Basic service resolution
-     */
-    basicUsage: () => {
-        const container = createDevelopmentContainer();
-        const logger = container.get<ILoggerService>(TYPES.ILoggerService);
-        logger.info('Inversify container initialized');
-        return logger;
-    },
-
-    /**
-     * Multiple service resolution
-     */
-    multipleServices: () => {
-        const container = createDevelopmentContainer();
-        const logger = container.get<ILoggerService>(TYPES.ILoggerService);
-        const parser = container.get<IGrammarParserService>(TYPES.IGrammarParserService);
-        const linter = container.get<ILinterService>(TYPES.ILinterService);
-
-        logger.info('All services resolved successfully');
-        return { logger, parser, linter };
-    },
-
-    /**
-     * Test container usage
-     */
-    testUsage: () => {
-        const container = createTestContainer();
-        const mockLogger = container.get<ILoggerService>(TYPES.ILoggerService);
-        // This will be a mock implementation
-        mockLogger.info('Test message');
-        return mockLogger;
-    },
-
-    /**
-     * Container validation example
-     */
-    validationUsage: async () => {
-        const container = createDevelopmentContainer();
-        const validation = await validateInversifyContainer(container);
-
-        if (validation.isValid) {
-            console.log('Container is valid');
-        } else {
-            console.error('Container validation errors:', validation.errors);
-        }
-
-        return validation;
-    }
-};
-
-/**
- * Service resolution helpers
- */
-export class InversifyServiceResolver {
-    constructor(private container: Container) { }
-
-    /**
-     * Get a service by type
-     */
-    get<T>(serviceIdentifier: symbol): T {
-        return this.container.get<T>(serviceIdentifier);
-    }
-
-    /**
-     * Check if a service is bound
-     */
-    isBound(serviceIdentifier: symbol): boolean {
-        return this.container.isBound(serviceIdentifier);
-    }
-
-    /**
-     * Get all core services
-     */
-    getCoreServices() {
-        return {
-            fileSystem: this.get<IFileSystemService>(TYPES.IFileSystemService),
-            logger: this.get<ILoggerService>(TYPES.ILoggerService),
-            progress: this.get<IProgressService>(TYPES.IProgressService),
-            configuration: this.get<IConfigurationService>(TYPES.IConfigurationService),
-            cache: this.get<ICacheService>(TYPES.ICacheService),
-            commandExecutor: this.get<ICommandExecutorService>(TYPES.ICommandExecutorService),
-            template: this.get<ITemplateService>(TYPES.ITemplateService),
-            validation: this.get<IValidationService>(TYPES.IValidationService),
-            event: this.get<IEventService>(TYPES.IEventService),
-            metrics: this.get<IMetricsService>(TYPES.IMetricsService),
-            healthCheck: this.get<IHealthCheckService>(TYPES.IHealthCheckService)
-        };
-    }
-
-    /**
-     * Get all business services
-     */
-    getBusinessServices() {
-        return {
-            grammarParser: this.get<IGrammarParserService>(TYPES.IGrammarParserService),
-            linter: this.get<ILinterService>(TYPES.ILinterService),
-            typeSafetyGenerator: this.get<ITypeSafetyGeneratorService>(TYPES.ITypeSafetyGeneratorService),
-            testGenerator: this.get<ITestGeneratorService>(TYPES.ITestGeneratorService),
-            packageManager: this.get<IPackageManagerService>(TYPES.IPackageManagerService)
-        };
-    }
-}
-
-/**
- * Create a service resolver for the global container
- */
-export function createGlobalServiceResolver(): InversifyServiceResolver {
-    return new InversifyServiceResolver(getGlobalInversifyContainer());
 }

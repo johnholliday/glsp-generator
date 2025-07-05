@@ -172,7 +172,8 @@ export class LangiumGrammarParser {
                     name: attr.name,
                     type: this.extractAttributeType(attr),
                     optional: attr.optional || false,
-                    array: this.isArrayType(attr)
+                    array: this.isArrayType(attr),
+                    reference: this.isReferenceType(attr) || false
                 });
             }
         }
@@ -247,6 +248,20 @@ export class LangiumGrammarParser {
 
     private isArrayType(attr: any): boolean {
         return attr.type && attr.type.$type === 'ArrayType';
+    }
+
+    private isReferenceType(attr: any): boolean {
+        if (!attr.type) return false;
+        
+        // Direct reference type
+        if (attr.type.$type === 'ReferenceType') return true;
+        
+        // Reference inside array type
+        if (attr.type.$type === 'ArrayType' && attr.type.elementType) {
+            return attr.type.elementType.$type === 'ReferenceType';
+        }
+        
+        return false;
     }
 
     private getTypeDefinitionString(type: any): string {
@@ -325,12 +340,15 @@ export class LangiumGrammarParser {
         // Walk through the rule definition to find assignments
         this.walkDefinition(rule.definition, (node: any) => {
             if (node.$type === 'Assignment') {
+                const isReference = this.isReferenceAssignment(node);
                 const property: GrammarProperty = {
                     name: node.feature,
                     type: this.inferTypeFromAssignment(node),
                     optional: node.operator === '?=' || node.cardinality === '?',
-                    array: node.operator === '+=' || node.cardinality === '+' || node.cardinality === '*'
+                    array: node.operator === '+=' || node.cardinality === '+' || node.cardinality === '*',
+                    reference: isReference || false
                 };
+
 
                 // Avoid duplicates
                 if (!properties.find(p => p.name === property.name)) {
@@ -367,6 +385,10 @@ export class LangiumGrammarParser {
         if (node.terminal) {
             this.walkDefinition(node.terminal, callback);
         }
+    }
+
+    private isReferenceAssignment(assignment: any): boolean {
+        return assignment.terminal && assignment.terminal.$type === 'CrossReference';
     }
 
     private inferTypeFromAssignment(assignment: any): string {

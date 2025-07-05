@@ -44,27 +44,19 @@ class CLI {
     const commandClasses = [
       GenerateCommand,
       ValidateCommand,
-      CleanCommand,
-      InitCommand,
-      TemplatesCommand,
-      DocsCommand,
-      CICDCommand,
-      NewCommand,
-      ValidateConfigCommand,
-      BenchmarkCommand,
-      ProfileCommand,
-      // NewCommand,
-      // InitCommand,
-      // ValidateConfigCommand,
       // CleanCommand,
+      // InitCommand,
       // TemplatesCommand,
+      // DocsCommand,
+      // CICDCommand,
+      // NewCommand,
+      // ValidateConfigCommand,
       // BenchmarkCommand,
       // ProfileCommand,
-      // CacheCommand
     ];
 
     for (const CommandClass of commandClasses) {
-      this.container.bind<ICommand>(TYPES.Command).to(CommandClass);
+      this.container.bind<ICommand>(CommandClass).to(CommandClass).inSingletonScope();
       const command = this.container.get<ICommand>(CommandClass);
       this.commands.push(command);
     }

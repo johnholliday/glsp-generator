@@ -17,7 +17,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "allowJs": true,
-    "noEmit": true,
+    "noEmit": false,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,

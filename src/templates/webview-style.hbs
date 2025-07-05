@@ -1,0 +1,122 @@
+/* Base Sprotty styles */
+.sprotty-graph {
+    background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.sprotty-hidden {
+    display: none;
+}
+
+.sprotty-popup {
+    position: absolute;
+    background: var(--vscode-editorWidget-background, #252526);
+    border: 1px solid var(--vscode-editorWidget-border, #464647);
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 12px;
+    color: var(--vscode-editorWidget-foreground, #cccccc);
+    z-index: 1000;
+}
+
+/* Node styles */
+.node {
+    cursor: move;
+}
+
+.node.selected rect,
+.node.selected circle {
+    stroke-width: 3;
+    stroke: var(--vscode-editor-selectionBackground, #264f78);
+}
+
+/* Edge styles */
+.edge {
+    pointer-events: stroke;
+}
+
+.edge path {
+    stroke: var(--vscode-editor-foreground, #cccccc);
+    stroke-width: 2;
+    fill: none;
+}
+
+.edge.selected path {
+    stroke: var(--vscode-editor-selectionBackground, #264f78);
+    stroke-width: 3;
+}
+
+/* Custom element styles */
+{{#each interfaces}}
+.{{toLowerCase name}} rect {
+    {{#if (eq name "State")}}
+    fill: #4A90E2;
+    stroke: #2E5C8A;
+    {{else if (eq name "Transition")}}
+    fill: #FFA500;
+    stroke: #CC8400;
+    {{else if (eq name "StateMachine")}}
+    fill: #F0F0F0;
+    stroke: #666666;
+    {{else}}
+    fill: #E0E0E0;
+    stroke: #999999;
+    {{/if}}
+    stroke-width: 2;
+}
+
+.{{toLowerCase name}} text {
+    {{#if (eq name "State")}}
+    fill: white;
+    {{else if (eq name "Transition")}}
+    fill: white;
+    {{else}}
+    fill: #333333;
+    {{/if}}
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    user-select: none;
+}
+{{/each}}
+
+/* Label styles */
+.label {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    fill: var(--vscode-editor-foreground, #cccccc);
+    background: var(--vscode-editor-background, #1e1e1e);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Resize handle styles */
+.resize-handle {
+    fill: var(--vscode-editor-selectionBackground, #264f78);
+    stroke: var(--vscode-editorWidget-border, #464647);
+    stroke-width: 1;
+    cursor: nwse-resize;
+}
+
+/* Port styles */
+.port {
+    fill: var(--vscode-editor-foreground, #cccccc);
+    stroke: var(--vscode-editorWidget-border, #464647);
+    stroke-width: 1;
+}
+
+.port:hover {
+    fill: var(--vscode-editor-selectionBackground, #264f78);
+    stroke-width: 2;
+}
+
+/* Animation for transitions */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.node.animating {
+    animation: pulse 1s infinite;
+}

@@ -83,12 +83,14 @@ registry "https://registry.npmjs.org/"
 
 # Disable automatic registry switching to prevent security issues
 # This prevents Yarn from automatically switching to different registries
-strict-ssl true
+# Note: SSL verification disabled by default to avoid corporate network issues
+# Re-enable with: yarn config set strict-ssl true
+strict-ssl false
 
-# Enable certificate checking for enhanced security
-# Critical for enterprise environments with security requirements
-ca null
-cafile null
+# Certificate settings - commented out to avoid SSL issues
+# Uncomment and configure for enterprise environments with custom certificates
+# ca null
+# cafile null
 
 # -----------------------------------------------------------------------------
 # TELEMETRY & PRIVACY SETTINGS

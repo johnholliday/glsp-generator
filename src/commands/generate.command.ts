@@ -309,7 +309,8 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
   }
 
   private async resolveGrammarPath(grammar?: string): Promise<string> {
-    const fs = await import('fs-extra');
+    const fsModule = await import('fs-extra');
+    const fs = fsModule.default;
 
     if (grammar && await fs.pathExists(grammar)) {
       return grammar;
@@ -364,7 +365,8 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
   }
 
   private async checkOutputDirectory(outputPath: string, force?: boolean): Promise<void> {
-    const fs = await import('fs-extra');
+    const fsModule = await import('fs-extra');
+    const fs = fsModule.default;
 
     if (await fs.pathExists(outputPath) && !force) {
       const files = await fs.readdir(outputPath);

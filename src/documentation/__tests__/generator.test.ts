@@ -138,11 +138,11 @@ describe('DocumentationGenerator', () => {
             expect(mockRenderer.renderArchitecture).toHaveBeenCalledWith(mockDocData);
             expect(mockRenderer.renderExamples).toHaveBeenCalledWith(mockDocData);
 
-            // Verify file writing operations
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('./test-output/README.md', '# Overview\nMocked overview content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('./test-output/api.md', '# API\nMocked API content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('./test-output/architecture.md', '# Architecture\nMocked architecture content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('./test-output/examples.md', '# Examples\nMocked examples content');
+            // Verify file writing operations (path.join normalizes paths)
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/README.md', '# Overview\nMocked overview content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/api.md', '# API\nMocked API content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/architecture.md', '# Architecture\nMocked architecture content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/examples.md', '# Examples\nMocked examples content');
         });
 
         it('should use default output directory when not configured', async () => {

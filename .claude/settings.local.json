@@ -35,7 +35,23 @@
       "Bash(tsc)",
       "Bash(rg:*)",
       "Bash(timeout 10 node dist/cli.js generate:*)",
-      "Bash(yarn build:*)"
+      "Bash(yarn build:*)",
+      "Bash(yarn why:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" yarn test --config test/vitest.config.ts --run test/unit)",
+      "Bash(curl:*)",
+      "Bash(hostname:*)",
+      "Bash(yarn vitest:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/run-vitest-ui.sh:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker inspect:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(yarn integration:statemachine:*)",
+      "Bash(yarn config:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(yarn tsc:*)",
+      "Bash(yarn integration:*)"
     ],
     "deny": []
   }

@@ -1,0 +1,27 @@
+import { ContainerModule } from 'inversify';
+import { TYPES, configureDefaultModelElements, configureModelElement, SGraph, SNode, SEdge } from 'sprotty';
+import { {{toPascalCase projectName}}ModelFactory } from './{{projectName}}-model-factory.js';
+import { {{toPascalCase projectName}}Views } from './{{projectName}}-views.js';
+
+/**
+ * Diagram module configuration for {{projectName}} GLSP diagrams
+ */
+export const {{projectName}}DiagramModule = new ContainerModule((bind, unbind, isBound, rebind) => {
+    const context = { bind, unbind, isBound, rebind };
+
+    // Configure default model elements
+    configureDefaultModelElements(context);
+
+    // Bind model factory
+    rebind(TYPES.IModelFactory).to({{toPascalCase projectName}}ModelFactory).inSingletonScope();
+
+    // Configure custom model elements
+    configureModelElement(context, 'graph', SGraph, {{toPascalCase projectName}}Views.GraphView);
+    
+    {{#each interfaces}}
+    configureModelElement(context, '{{toLowerCase name}}', SNode, {{toPascalCase ../projectName}}Views.{{name}}View);
+    {{/each}}
+
+    // Configure edges
+    configureModelElement(context, 'edge', SEdge, {{toPascalCase projectName}}Views.EdgeView);
+});

@@ -25,7 +25,11 @@ export class {{toPascalCase projectName}}ServerModel {
                     ...baseElement,
 {{#each properties}}
 {{#unless array}}
-                    {{name}}: {{#if optional}}undefined{{else}}{{#if (eq type "string")}}'default'{{else if (eq type "number")}}0{{else if (eq type "boolean")}}false{{else}}undefined{{/if}}{{/if}},
+{{#if reference}}
+                    {{name}}: {{#if optional}}undefined{{else}}null as any{{/if}}, // Reference - must be set later
+{{else}}
+                    {{name}}: {{#if optional}}undefined{{else}}{{#if (eq type "string")}}'default'{{else if (eq type "number")}}0{{else if (eq type "boolean")}}false{{else}}'default'{{/if}}{{/if}},
+{{/if}}
 {{else}}
                     {{name}}: [],
 {{/unless}}

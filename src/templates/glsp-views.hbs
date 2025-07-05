@@ -1,0 +1,253 @@
+import { injectable } from 'inversify';
+import { VNode } from 'snabbdom';
+import { h, RenderingContext, SNode, SEdge, ShapeView, PolylineEdgeView, SGraph } from 'sprotty';
+
+/**
+ * View definitions for {{projectName}} diagram elements
+ */
+export namespace {{toPascalCase projectName}}Views {
+
+    /**
+     * Main graph view
+     */
+    @injectable()
+    export class GraphView extends ShapeView {
+        render(model: SGraph, context: RenderingContext): VNode {
+            const transform = `scale(1) translate(0, 0)`; // Basic transform
+            return h('svg', { class: { graph: true } }, [
+                h('defs', {}, [
+                    // Arrow marker for edges
+                    h('marker', {
+                        attrs: {
+                            id: 'arrow',
+                            markerWidth: '10',
+                            markerHeight: '10',
+                            refX: '9',
+                            refY: '3',
+                            orient: 'auto',
+                            markerUnits: 'strokeWidth'
+                        }
+                    }, [
+                        h('path', { attrs: { d: 'M0,0 L0,6 L9,3 z', fill: '#333' } })
+                    ])
+                ]),
+                h('g', { attrs: { transform } }, context.renderChildren(model))
+            ]);
+        }
+    }
+
+    {{#each interfaces}}
+    /**
+     * {{name}} node view
+     */
+    export interface {{name}}Node extends SNode {
+        {{#each properties}}
+        {{name}}{{#if optional}}?{{/if}}: {{#if array}}{{type}}[]{{else}}{{type}}{{/if}};
+        {{/each}}
+    }
+
+    @injectable()
+    export class {{name}}View extends ShapeView {
+        render(node: SNode & {{name}}Node, context: RenderingContext): VNode {
+            const { x, y } = node.position || { x: 0, y: 0 };
+            const { width, height } = node.size || { width: {{#if (eq name "State")}}100{{else if (eq name "Transition")}}150{{else}}120{{/if}}, height: {{#if (eq name "State")}}60{{else if (eq name "Transition")}}40{{else}}80{{/if}} };
+            
+            const children: VNode[] = [];
+            
+            {{#if (eq name "State")}}
+            // State node - rounded rectangle
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        rx: 10, ry: 10,
+                        fill: '#4A90E2',
+                        stroke: '#2E5C8A',
+                        'stroke-width': 2
+                    }
+                })
+            );
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: width / 2, y: height / 2,
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        fill: 'white',
+                        'font-family': 'Arial',
+                        'font-size': '14',
+                        'font-weight': 'bold'
+                    }
+                }, String((node as any).name || 'State'))
+            );
+            {{else if (eq name "Transition")}}
+            // Transition representation - will be rendered as edge
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        rx: 5, ry: 5,
+                        fill: '#FFA500',
+                        stroke: '#CC8400',
+                        'stroke-width': 2
+                    }
+                })
+            );
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: width / 2, y: height / 2,
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        fill: 'white',
+                        'font-family': 'Arial',
+                        'font-size': '12'
+                    }
+                }, String((node as any).event || 'event'))
+            );
+            {{else if (eq name "StateMachine")}}
+            // StateMachine container
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        rx: 5, ry: 5,
+                        fill: '#F0F0F0',
+                        stroke: '#666',
+                        'stroke-width': 2,
+                        'stroke-dasharray': '5,5'
+                    }
+                })
+            );
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: width / 2, y: 20,
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        fill: '#333',
+                        'font-family': 'Arial',
+                        'font-size': '16',
+                        'font-weight': 'bold'
+                    }
+                }, String((node as any).name || 'StateMachine'))
+            );
+            {{else}}
+            // Generic node
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        fill: '#E0E0E0',
+                        stroke: '#999',
+                        'stroke-width': 2
+                    }
+                })
+            );
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: width / 2, y: height / 2,
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        fill: '#333',
+                        'font-family': 'Arial',
+                        'font-size': '14'
+                    }
+                }, String(node.id))
+            );
+            {{/if}}
+            
+            // Add child elements
+            children.push(...context.renderChildren(node));
+            
+            return h('g', {
+                attrs: { transform: `translate(${x}, ${y})` },
+                class: { node: true, '{{toLowerCase name}}': true }
+            }, children);
+        }
+    }
+    {{/each}}
+
+    /**
+     * Edge view for transitions
+     */
+    @injectable()
+    export class EdgeView extends PolylineEdgeView {
+        protected renderLine(edge: SEdge, segments: Point[], context: RenderingContext): VNode | undefined {
+            const path = this.createPath(segments);
+            const children: VNode[] = [
+                h('path', {
+                    attrs: {
+                        d: path,
+                        fill: 'none',
+                        stroke: '#333',
+                        'stroke-width': 2,
+                        'marker-end': 'url(#arrow)'
+                    }
+                })
+            ];
+            
+            const label = this.renderLabel(edge, segments, context);
+            if (label) {
+                children.push(label);
+            }
+            
+            return h('g', { class: { edge: true } }, children);
+        }
+
+        private renderLabel(edge: SEdge, segments: Point[], context: RenderingContext): VNode | undefined {
+            if (!edge.children || edge.children.length === 0) return undefined;
+            
+            // Calculate middle point of the edge
+            const totalLength = this.calculatePathLength(segments);
+            const midPoint = this.getPointAtLength(segments, totalLength / 2);
+            
+            return h('g', {
+                attrs: { transform: `translate(${midPoint.x}, ${midPoint.y})` }
+            }, edge.children.map(child => context.renderElement(child)));
+        }
+
+        private createPath(segments: Point[]): string {
+            let path = `M ${segments[0].x} ${segments[0].y}`;
+            for (let i = 1; i < segments.length; i++) {
+                path += ` L ${segments[i].x} ${segments[i].y}`;
+            }
+            return path;
+        }
+
+        private calculatePathLength(segments: Point[]): number {
+            let length = 0;
+            for (let i = 1; i < segments.length; i++) {
+                const dx = segments[i].x - segments[i - 1].x;
+                const dy = segments[i].y - segments[i - 1].y;
+                length += Math.sqrt(dx * dx + dy * dy);
+            }
+            return length;
+        }
+
+        private getPointAtLength(segments: Point[], targetLength: number): Point {
+            let currentLength = 0;
+            for (let i = 1; i < segments.length; i++) {
+                const dx = segments[i].x - segments[i - 1].x;
+                const dy = segments[i].y - segments[i - 1].y;
+                const segmentLength = Math.sqrt(dx * dx + dy * dy);
+                
+                if (currentLength + segmentLength >= targetLength) {
+                    const ratio = (targetLength - currentLength) / segmentLength;
+                    return {
+                        x: segments[i - 1].x + dx * ratio,
+                        y: segments[i - 1].y + dy * ratio
+                    };
+                }
+                currentLength += segmentLength;
+            }
+            return segments[segments.length - 1];
+        }
+    }
+}
+
+interface Point {
+    x: number;
+    y: number;
+}

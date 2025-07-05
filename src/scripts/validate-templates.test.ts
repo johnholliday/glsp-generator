@@ -10,7 +10,7 @@ import {
 } from '../validation/template-validator.js';
 
 describe('validate-templates', () => {
-  let tempDir: string;
+  let tempDir: string = '';
 
   beforeEach(async () => {
     // Create a temporary directory for test files

@@ -8,6 +8,7 @@ export interface ExtensionMetadata {
     repository?: string;
     author?: string;
     keywords?: string[];
+    fileExtension?: string;
 }
 
 export interface DependencyConfig {

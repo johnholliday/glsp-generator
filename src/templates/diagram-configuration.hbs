@@ -5,26 +5,19 @@ import { {{toPascalCase projectName}}Model } from '../../common/{{projectName}}-
 export class {{toPascalCase projectName}}DiagramConfiguration extends GLSPDiagramConfiguration {
     readonly diagramType = '{{projectName}}-diagram';
 
-    createContainer(widgetId: string): Container {
-        const container = super.createContainer(widgetId);
-        // Register default tools and handlers
-        {{#if config.diagram.features.grid}}
-        this.configureGrid(container);
-        {{/if}}
-        {{#if config.diagram.features.autoLayout}}
-        this.configureAutoLayout(container);
-        {{/if}}
-        return container;
-    }
-
-    protected initializeDiagramContainer(container: Container): void {
-        super.initializeDiagramContainer(container);
+    configureContainer(container: Container): void {
         // Register model elements
         // Note: We're binding the namespace itself, not trying to use it as a value
         container.bind('{{toPascalCase projectName}}ModelNamespace').toConstantValue({{toPascalCase projectName}}Model);
         
         // Configure diagram options
         this.configureDiagramOptions(container);
+        {{#if config.diagram.features.grid}}
+        this.configureGrid(container);
+        {{/if}}
+        {{#if config.diagram.features.autoLayout}}
+        this.configureAutoLayout(container);
+        {{/if}}
     }
     
     private configureDiagramOptions(container: Container): void {

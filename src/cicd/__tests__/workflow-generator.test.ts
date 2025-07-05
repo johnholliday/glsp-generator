@@ -10,7 +10,7 @@ import { DEFAULT_CONFIG } from '../../config/default-config.js';
 
 describe('WorkflowGenerator', () => {
     let generator: WorkflowGenerator;
-    let tempDir: string;
+    let tempDir: string = '';
     
     beforeEach(async () => {
         generator = new WorkflowGenerator();

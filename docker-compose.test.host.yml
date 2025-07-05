@@ -1,0 +1,18 @@
+services:
+  vitest-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    # Use host network mode for direct access in WSL2
+    network_mode: "host"
+    volumes:
+      # Mount source code for live updates
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./vitest.config.ts:/app/vitest.config.ts
+      - ./test/vitest.config.ts:/app/test/vitest.config.ts
+      # Exclude node_modules to use container's dependencies
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+    command: ["yarn", "vitest", "--ui", "--api.port=51204", "--api.host=0.0.0.0"]

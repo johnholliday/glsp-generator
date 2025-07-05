@@ -67,35 +67,65 @@ Claude Code MUST follow these rules without exception:
 - ✅ Use exact versions or ranges in dependencies
 - ✅ Traditional scripts that work with Yarn 1.x
 
-## Directory Structure
+## Directory Structure (v2 Architecture)
 ```
 glsp-generator/
 ├── src/
-│   ├── cli.ts                 # CLI entry point
-│   ├── index.ts              # Library exports
-│   ├── generator.ts          # Core generation orchestration
-│   ├── types/
-│   │   └── grammar.ts        # TypeScript interfaces for grammar AST
-│   ├── utils/
-│   │   ├── langium-ast-parser.ts  # Modern AST parser (preferred)
-│   │   ├── langium-parser.ts      # Legacy parser (deprecating)
-│   │   └── handlebars-helpers.ts  # Template helper functions
-│   └── templates/            # Handlebars templates
-│       ├── browser/
-│       ├── common/
-│       └── server/
-├── dist/                     # Compiled output (git-ignored)
-├── test/                     # Test fixtures and data
-├── scripts/                  # Utility scripts (Claude Code outputs here)
-├── history/                  # Claude Code action documentation
-├── prompts/                  # Enhancement implementation prompts
-│   ├── README.md            # Prompt index and status
-│   └── prompt-*.md          # Individual enhancement prompts
+│   ├── core/                    # Core business logic
+│   │   ├── interfaces/         # Core interfaces (SOLID)
+│   │   ├── services/          # Core service implementations
+│   │   ├── models/            # Domain models
+│   │   └── patterns/          # Design patterns (factories, builders)
+│   ├── parser/                 # Grammar parsing
+│   │   ├── services/          # Parser implementations
+│   │   └── cache/             # Parser caching
+│   ├── validation/             # Grammar validation
+│   │   ├── services/          # Validator implementations
+│   │   ├── rules/             # Validation rules
+│   │   └── interfaces/        # Validation contracts
+│   ├── templates/              # Template rendering
+│   │   ├── strategies/        # Template strategies (browser, server, common)
+│   │   ├── services/          # Template engine
+│   │   └── helpers/           # Handlebars helpers
+│   ├── infrastructure/         # Cross-cutting concerns
+│   │   ├── di/               # Dependency injection setup
+│   │   ├── logging/          # Structured logging
+│   │   ├── errors/           # Error hierarchy
+│   │   ├── events/           # Event bus
+│   │   └── filesystem/       # File operations
+│   ├── cli/                    # Command-line interface
+│   │   ├── commands/          # CLI commands
+│   │   └── cli.ts            # CLI entry point
+│   ├── cli-refactored.ts      # New CLI using DI (temporary during migration)
+│   └── index.ts               # Library exports
+├── dist/                       # Compiled output (git-ignored)
+├── test/                       # Comprehensive test suite
+│   ├── unit/                  # Unit tests
+│   ├── integration/           # Integration tests
+│   ├── fixtures/              # Test data and fixtures
+│   ├── mocks/                 # Mock implementations
+│   ├── helpers/               # Test helper utilities
+│   └── utils/                 # Test framework utilities
+├── docs/                       # Documentation
+│   ├── architecture/          # C4 diagrams and architecture docs
+│   ├── MIGRATION_GUIDE.md     # v1 to v2 migration guide
+│   ├── TECHNICAL_DOCUMENTATION.md
+│   └── API_REFERENCE.md       # API documentation
+├── scripts/                    # Utility scripts (Claude Code outputs here)
+├── history/                    # Claude Code action documentation
+├── prompts/                    # Enhancement implementation prompts
+│   ├── README.md              # Prompt index and status
+│   └── prompt-*.md            # Individual enhancement prompts
+├── templates/                  # Handlebars templates
+│   ├── browser/               # Client-side templates
+│   ├── common/                # Shared templates
+│   └── server/                # Server-side templates
 ├── package.json
 ├── tsconfig.json
-├── vitest.config.ts          # Vitest configuration
-├── CLAUDE.md                 # This file
-├── TESTPLAN.md              # Test documentation (maintained by Claude)
+├── vitest.config.ts           # Vitest configuration
+├── CLAUDE.md                  # This file
+├── TESTPLAN.md                # Test documentation (maintained by Claude)
+├── REFACTORING_COMPLETE.md    # Refactoring summary
 └── README.md
 ```
 
@@ -190,94 +220,112 @@ node dist/cli.js upgrade
 node dist/cli.js upgrade --fix
 ```
 
-## Architecture and Code Structure
+## Architecture and Code Structure (v2)
 
 ### Core Architecture Flow
 ```
-1. Grammar File (.langium) → 2. Parser (AST) → 3. Type System → 4. Generator → 5. Templates → 6. Output Files
+1. Grammar File (.langium) → 2. Parser (Native Langium AST) → 3. Validation → 4. Template Rendering → 5. File Generation
 ```
 
-### Key Components
+### Service-Oriented Architecture
 
-#### Entry Points
-- **src/cli.ts**: Command-line interface executable
-  - Handles argument parsing using commander
-  - Provides user-friendly error messages
-  - Manages file I/O operations
+The v2 architecture follows SOLID principles with clear separation of concerns:
 
-- **src/index.ts**: Library exports for programmatic use
-  ```typescript
-  export { generateGLSPExtension } from './generator';
-  export * from './types/grammar';
-  ```
+#### Core Services
 
-#### Parser System
-- **src/utils/langium-ast-parser.ts**: Modern AST-based parser
-  - Uses Langium's official createLangiumGrammarServices()
-  - Handles grammar validation
-  - Returns structured GrammarAST
-  
-- **src/utils/langium-parser.ts**: Legacy parser (being phased out)
-  - Manual parsing implementation
-  - Keep for backward compatibility only
+- **GenerationOrchestrator** (`src/core/services/GenerationOrchestrator.ts`)
+  - Main coordinator implementing the Facade pattern
+  - Orchestrates the entire generation workflow
+  - Manages events and plugins
+  - Implements: `IGenerator`, `IEventDrivenGenerator`, `IPluginEnabledGenerator`
 
-#### Type System (src/types/grammar.ts)
+- **LangiumGrammarParser** (`src/parser/services/LangiumGrammarParser.ts`)
+  - Uses Langium's native API exclusively
+  - NO custom AST conversion - returns native Grammar objects
+  - Includes caching for performance
+  - Implements: `IParser`, `IContentParser`
+
+- **LangiumValidator** (`src/validation/services/LangiumValidator.ts`)
+  - Comprehensive grammar validation
+  - Extensible rule system
+  - Integration with Langium's validation API
+  - Implements: `IValidator`
+
+- **TemplateEngineOrchestrator** (`src/templates/services/TemplateEngineOrchestrator.ts`)
+  - Manages template strategies
+  - Coordinates rendering across different output types
+  - Implements: `ITemplateEngine`
+
+#### Template Strategies
+
+- **BrowserStrategy** - Client-side code generation
+- **ServerStrategy** - Server-side code generation  
+- **CommonStrategy** - Shared code generation
+
+Each strategy implements `ITemplateStrategy` for extensibility.
+
+#### Dependency Injection
+
+All services are wired using InversifyJS:
+
 ```typescript
-interface GrammarAST {
-  name: string;
-  imports: Import[];
-  rules: Rule[];
-  interfaces: Interface[];
-  types: TypeAlias[];
-}
+import { createContainer, TYPES } from '@glsp/generator';
 
-interface Property {
-  name: string;
-  type: PropertyType;
-  isOptional: boolean;
-  isArray: boolean;
-  isReference: boolean;
+const container = createContainer();
+const generator = container.get<IGenerator>(TYPES.IGenerator);
+```
+
+#### Event System
+
+Event-driven architecture for extensibility:
+
+```typescript
+generator.on('generation.completed', (result) => {
+  console.log(`Generated ${result.files.length} files`);
+});
+```
+
+#### Plugin System
+
+Extend functionality without modifying core:
+
+```typescript
+class MyPlugin implements IGeneratorPlugin {
+  async initialize(generator: IEventDrivenGenerator) {
+    generator.on('templates.rendered', this.postProcess);
+  }
 }
 ```
 
-#### Generator (src/generator.ts)
-- Orchestrates the entire generation process
-- Manages template rendering
-- Handles file system operations
-- Key functions:
-  ```typescript
-  generateGLSPExtension(grammarPath: string, outputDir: string): Promise<void>
-  validateGrammar(ast: GrammarAST): ValidationResult
-  renderTemplates(ast: GrammarAST, outputDir: string): Promise<void>
-  ```
+#### Key Interfaces
 
-#### Migration System (src/migration/)
-- **antlr-converter.ts**: Converts ANTLR4 grammars (.g4) to Langium
-  - Parses ANTLR grammar structure
-  - Converts parser/lexer rules
-  - Preserves semantic actions as comments
-  
-- **xtext-converter.ts**: Converts Xtext grammars to Langium
-  - Handles Xtext-specific syntax
-  - Converts metamodel declarations
-  - Maps terminal and data type rules
-  
-- **glsp-analyzer.ts**: Analyzes existing GLSP TypeScript projects
-  - Extracts interfaces and types using TypeScript compiler API
-  - Detects common GLSP patterns
-  - Generates Langium grammar from extracted types
-  
-- **upgrade-assistant.ts**: Helps upgrade between generator versions
-  - Applies automated fixes for breaking changes
-  - Creates backups before upgrading
-  - Provides upgrade recommendations
-  
-- **migration-wizard.ts**: Interactive migration tool
-  - Guides users through migration process
-  - Auto-detects source format
-  - Previews conversion results
+- **IGenerator** - Main generation interface
+- **IParser** - Grammar parsing using Langium AST
+- **IValidator** - Grammar validation
+- **ITemplateEngine** - Template rendering
+- **IPlugin** - Plugin system interface
+- **IEventDrivenGenerator** - Event subscription/emission
+- **IConfigurationManager** - Configuration management
 
-### Template System
+#### Infrastructure Services
+
+- **ConfigurationManager** - Loads config from multiple sources (cosmiconfig)
+- **StructuredLogger** - Winston-based logging with correlation IDs
+- **FileSystemService** - Abstracted file operations (fs-extra)
+- **EventBus** - Event publish/subscribe system
+- **ErrorHandler** - Centralized error handling
+- **CacheService** - LRU caching for performance
+
+#### Design Patterns Used
+
+- **Facade Pattern**: GenerationOrchestrator simplifies complex subsystem
+- **Strategy Pattern**: Template strategies for different output types
+- **Factory Pattern**: Creation of complex objects
+- **Builder Pattern**: Fluent API for configuration
+- **Observer Pattern**: Event-driven architecture
+- **Dependency Injection**: InversifyJS container
+
+### Template System (v2)
 
 #### Template Directory Structure
 ```
@@ -288,11 +336,14 @@ templates/
 │   └── frontend-module.hbs
 ├── common/
 │   ├── model-types.hbs
-│   └── protocol.hbs
+│   ├── protocol.hbs
+│   ├── interfaces.hbs
+│   └── utils.hbs
 ├── server/
 │   ├── model-factory.hbs
 │   ├── node-handlers.hbs
-│   └── server-module.hbs
+│   ├── server-module.hbs
+│   └── validators.hbs
 └── package.json.hbs          # MUST generate Yarn 1.22 compatible output
 ```
 
@@ -303,23 +354,59 @@ templates/
 - No workspace protocol references
 - Traditional `node_modules` resolution
 
-#### Available Handlebars Helpers
+#### Comprehensive Handlebars Helpers (50+)
+
+The v2 HelperRegistry provides extensive helpers:
+
 ```typescript
 // String manipulation
-toLowerCase(str: string): string
-toPascalCase(str: string): string  // "my-name" → "MyName"
-toCamelCase(str: string): string   // "my-name" → "myName"
+toLowerCase, toUpperCase, toPascalCase, toCamelCase, toKebabCase, toSnakeCase
+capitalize, pluralize, singularize, trim, substring, padStart, padEnd
+repeat, replace, split
 
-// Collection helpers
-hasElements(array: any[]): boolean
-join(array: any[], separator: string): string
+// Comparison
+eq, neq, lt, lte, gt, gte, and, or, not, includes
 
-// Logical helpers
-eq(a: any, b: any): boolean
-neq(a: any, b: any): boolean
-and(...args: any[]): boolean
-or(...args: any[]): boolean
-unless(condition: any, options: any): string
+// Arrays
+hasElements, isEmpty, length, first, last, join, unique, sortBy, groupBy
+
+// Math
+add, subtract, multiply, divide, mod, round, floor, ceil, abs, min, max
+
+// Objects
+json, parseJSON, keys, values, entries
+
+// Utilities
+defaultValue, concat, formatDate, now, timestamp
+```
+
+#### Template Context
+
+Templates receive comprehensive context:
+
+```typescript
+interface TemplateContext {
+  // Langium Grammar (native AST)
+  grammar: Grammar;
+  
+  // Extracted data
+  interfaces: Interface[];
+  rules: Rule[];
+  types: Type[];
+  
+  // Project metadata
+  projectName: string;
+  namespace: string;
+  version: string;
+  
+  // Computed flags
+  hasInterfaces: boolean;
+  hasTypes: boolean;
+  entryRule?: Rule;
+  
+  // Custom variables
+  [key: string]: any;
+}
 ```
 
 #### Template Usage Example
@@ -671,17 +758,98 @@ node --inspect dist/cli.js generate <grammar-file>
 
 **Note**: All commands above work in PowerShell. Use backslashes for Windows paths or forward slashes (both work).
 
-## API Reference
-See `src/index.ts` for public API exports. Main function:
+## API Reference (v2)
+
+### Main API
+
 ```typescript
-generateGLSPExtension(
-  grammarPath: string,
-  outputDir: string,
-  options?: {
-    validate?: boolean;
-    verbose?: boolean;
+import { createContainer, TYPES } from '@glsp/generator';
+import { IGenerator } from '@glsp/generator/interfaces';
+
+// Create DI container
+const container = createContainer();
+
+// Get generator service
+const generator = container.get<IGenerator>(TYPES.IGenerator);
+
+// Generate with new API
+const result = await generator.generate({
+  grammarPath: './grammar.langium',
+  outputDir: './output',
+  options: {
+    validate: true,
+    templates: ['browser', 'server', 'common'],
+    packageName: 'my-extension',
+    version: '1.0.0'
   }
-): Promise<void>
+});
+
+// Check result
+if (result.success) {
+  console.log(`Generated ${result.files.length} files`);
+  console.log(`Duration: ${result.metadata.duration}ms`);
+} else {
+  result.errors.forEach(error => {
+    console.error(`${error.code}: ${error.message}`);
+  });
+}
+```
+
+### Configuration
+
+Supports multiple config sources via cosmiconfig:
+
+```json
+// .glsprc.json
+{
+  "extension": {
+    "name": "my-extension",
+    "version": "1.0.0"
+  },
+  "templates": ["browser", "server", "common"],
+  "validation": {
+    "strict": true
+  },
+  "plugins": ["@glsp/plugin-documentation"]
+}
+```
+
+### Events
+
+```typescript
+// Subscribe to events
+generator.on('generation.started', (config) => {
+  console.log('Starting generation...');
+});
+
+generator.on('grammar.parsed', (grammar) => {
+  console.log(`Parsed: ${grammar.name}`);
+});
+
+generator.on('templates.rendered', (files) => {
+  console.log(`Rendered ${files.length} templates`);
+});
+```
+
+### Plugins
+
+```typescript
+class MyPlugin implements IGeneratorPlugin {
+  name = 'my-plugin';
+  version = '1.0.0';
+  
+  async initialize(generator: IEventDrivenGenerator) {
+    generator.on('generation.completed', this.onComplete);
+  }
+  
+  private onComplete = (result: GenerationResult) => {
+    console.log('Generation complete!');
+  };
+}
+
+// Register plugin
+const pluginManager = container.get<IPluginManager>(TYPES.IPluginManager);
+await pluginManager.registerPlugin(new MyPlugin());
 ```
 
 ## PowerShell/Windows Compatibility Requirements
@@ -842,6 +1010,12 @@ glsp-generator\
 - ✅ Write PowerShell-compatible commands and scripts
 - ✅ Use cross-platform Node.js scripts when possible
 - ✅ Delete `package-lock.json` if found
+- ✅ Use Langium Grammar AST directly (no custom AST)
+- ✅ Follow SOLID principles in all code
+- ✅ Use dependency injection for services
+- ✅ Add TSDoc comments to public APIs
+- ✅ Keep methods under 20 lines
+- ✅ Keep classes under 300 lines
 
 ### Must Not Do
 - ❌ Use npm commands (always use yarn)
@@ -854,3 +1028,17 @@ glsp-generator\
 - ❌ Create scripts outside `scripts/` folder
 - ❌ Use bash/WSL-specific commands in documentation
 - ❌ Create .sh scripts (unless specifically requested)
+- ❌ Create custom AST types (use Langium's Grammar)
+- ❌ Instantiate services directly (use DI container)
+- ❌ Put business logic in infrastructure layer
+
+## v2 Architecture Key Points
+
+1. **Langium AST Only**: No custom AST conversion, use Grammar directly
+2. **Service-Oriented**: Each service has single responsibility
+3. **Dependency Injection**: All services wired through InversifyJS
+4. **Event-Driven**: Extensibility through events and plugins
+5. **SOLID Principles**: Followed throughout the codebase
+6. **Industry Standards**: Using cosmiconfig, zod, winston, etc.
+7. **Comprehensive Testing**: 90%+ coverage with Vitest
+8. **Full Documentation**: TSDoc, migration guide, technical docs

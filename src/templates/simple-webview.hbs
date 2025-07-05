@@ -1,0 +1,147 @@
+import { Container } from 'inversify';
+import { TYPES, ConsoleLogger, LogLevel, SGraphImpl, SModelRoot, IModelFactory, configureViewerOptions, ModelViewer, defaultModule } from 'sprotty';
+import { {{projectName}}DiagramModule } from '../browser/diagram/{{projectName}}-diagram-module';
+
+// VS Code API
+declare const acquireVsCodeApi: () => any;
+const vscode = acquireVsCodeApi();
+
+/**
+ * Initialize GLSP diagram in the webview
+ */
+async function initializeDiagram(): Promise<void> {
+    try {
+        // Create container with default sprotty modules
+        const container = new Container();
+        container.load(defaultModule);
+        container.load({{projectName}}DiagramModule);
+        
+        // Configure logging
+        container.rebind(TYPES.ILogger).to(ConsoleLogger).inSingletonScope();
+        container.rebind(TYPES.LogLevel).toConstantValue(LogLevel.info);
+        
+        // Configure viewer options
+        configureViewerOptions(container, {
+            baseDiv: 'sprotty-container',
+            hiddenDiv: 'sprotty-hidden',
+            popupDiv: 'sprotty-popup',
+            needsClientLayout: true,
+            needsServerLayout: false
+        });
+        
+        // Get the model factory
+        const modelFactory = container.get<IModelFactory>(TYPES.IModelFactory);
+        
+        // Create initial model
+        const initialModel: SModelRoot = {
+            type: 'graph',
+            id: 'graph',
+            children: []
+        };
+        
+        // Create the model
+        const model = modelFactory.createRoot(initialModel) as SGraphImpl;
+        
+        // Get the viewer
+        const viewer = container.get<ModelViewer>(TYPES.ModelViewer);
+        
+        // Update the model
+        await viewer.update(model);
+        
+        // Notify extension that diagram is ready
+        vscode.postMessage({ command: 'diagramReady' });
+        
+        // Set up message handling
+        window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.type) {
+                case 'update':
+                    handleDocumentUpdate(message.text, modelFactory, viewer);
+                    break;
+                case 'command':
+                    console.log('Command received:', message.command);
+                    break;
+            }
+        });
+        
+        // Request initial content
+        vscode.postMessage({ command: 'ready' });
+        
+    } catch (error) {
+        console.error('Failed to initialize diagram:', error);
+        vscode.postMessage({ 
+            command: 'error', 
+            error: error instanceof Error ? error.message : String(error) 
+        });
+    }
+}
+
+/**
+ * Handle document updates
+ */
+async function handleDocumentUpdate(content: string, modelFactory: IModelFactory, viewer: ModelViewer) {
+    try {
+        // Parse the content to extract model information
+        const modelData = parseDocumentContent(content);
+        
+        // Create updated model
+        const updatedModel = modelFactory.createRoot(modelData) as SGraphImpl;
+        
+        // Update the viewer
+        await viewer.update(updatedModel);
+        
+    } catch (error) {
+        console.error('Failed to update diagram:', error);
+    }
+}
+
+/**
+ * Parse document content to create model data
+ */
+function parseDocumentContent(content: string): SModelRoot {
+    // Simple parser - in a real implementation, this would parse the DSL
+    const lines = content.split('\n').filter(line => line.trim());
+    const children: any[] = [];
+    
+    // Extract states
+    const stateRegex = /^\s*State\s+(\w+)/gm;
+    let match;
+    let y = 50;
+    
+    while ((match = stateRegex.exec(content)) !== null) {
+        children.push({
+            id: match[1],
+            type: 'state',
+            name: match[1],
+            position: { x: 100, y: y },
+            size: { width: 120, height: 60 }
+        });
+        y += 100;
+    }
+    
+    // Extract transitions
+    const transitionRegex = /^\s*Transition\s+(\w+)\s*:\s*(\w+)\s*->\s*(\w+)/gm;
+    
+    while ((match = transitionRegex.exec(content)) !== null) {
+        children.push({
+            id: match[1],
+            type: 'edge',
+            sourceId: match[2],
+            targetId: match[3],
+            routingPoints: []
+        });
+    }
+    
+    return {
+        type: 'graph',
+        id: 'graph',
+        children: children
+    };
+}
+
+// Initialize when the DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDiagram);
+} else {
+    initializeDiagram();
+}

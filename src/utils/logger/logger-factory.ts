@@ -1,6 +1,5 @@
 import { injectable } from 'inversify';
 import pino from 'pino';
-import * as pinoSeq from 'pino-seq';
 import { ILogger, ILoggerFactory } from './interfaces.js';
 import { PinoLogger } from './pino-logger.js';
 
@@ -11,27 +10,19 @@ export class LoggerFactory implements ILoggerFactory {
   constructor() {
     const streams: pino.StreamEntry[] = [];
 
-    // SEQ stream
-    if (process.env.SEQ_ENABLED !== 'false' && process.env.NODE_ENV !== 'test') {
-      const seqStream = pinoSeq.createStream({
-        serverUrl: process.env.SEQ_URL || 'http://localhost:5341',
-        apiKey: process.env.SEQ_API_KEY || '',
-        logOtherAs: 'Verbose'
-      });
-      streams.push({ stream: seqStream });
+    // SEQ stream - disable for now due to module loading issues
+    // TODO: Fix pino-seq import issue
+    if (false && process.env.SEQ_ENABLED !== 'false' && process.env.NODE_ENV !== 'test') {
+      // const seqStream = pinoSeq.createStream({
+      //   serverUrl: process.env.SEQ_URL || 'http://localhost:5341',
+      //   apiKey: process.env.SEQ_API_KEY || '',
+      //   logOtherAs: 'Verbose'
+      // });
+      // streams.push({ stream: seqStream });
     }
 
-    // Console stream with pretty printing for development
-    if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-      streams.push({
-        stream: require('pino-pretty')({
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-          messageFormat: '{component} | {msg}'
-        })
-      });
-    } else if (process.env.NODE_ENV !== 'test') {
+    // Console stream - simple stdout for now
+    if (process.env.NODE_ENV !== 'test') {
       streams.push({ stream: process.stdout });
     }
 

@@ -159,7 +159,23 @@ export class TemplateResolver {
             'tsconfig': 'tsconfig.json',
             '.yarnrc': '.yarnrc',
             'yarn.lock': 'yarn.lock',
-            'README.md': 'README.md'
+            'README.md': 'README.md',
+            'extension': 'src/extension/index.ts',
+            'language-configuration': 'language-configuration.json',
+            'textmate-grammar': `syntaxes/${projectName}.tmLanguage.json`,
+            'glsp-diagram-module': `src/browser/diagram/${projectName}-diagram-module.ts`,
+            'glsp-model-factory': `src/browser/diagram/${projectName}-model-factory.ts`,
+            'glsp-views': `src/browser/diagram/${projectName}-views.ts`,
+            'glsp-server': `src/server/${projectName}-server.ts`,
+            'glsp-model-state': `src/server/model/${projectName}-model-state.ts`,
+            'simple-diagram-module': `src/browser/diagram/${projectName}-diagram-module.ts`,
+            'simple-views': `src/browser/diagram/${projectName}-views.ts`,
+            'simple-server': `src/server/${projectName}-server.ts`,
+            'simple-webview': 'src/webview/index.ts',
+            'server-diagram-configuration': `src/server/${projectName}-diagram-configuration.ts`,
+            'webview-index': 'src/webview/index.ts',
+            'webview-style': 'dist/webview/style.css',
+            'webpack-config': 'webpack.config.js'
         };
 
         // Check direct mapping first

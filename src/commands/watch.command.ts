@@ -83,7 +83,8 @@ export class WatchCommand extends BaseCommand<WatchArgs> {
 
   async handler(args: WatchArgs): Promise<void> {
     try {
-      const { GrammarWatcher } = await import('../watch/watcher.js');
+      // TODO: Restore when watcher is available
+      // const { GrammarWatcher } = await import('../watch/watcher.js');
 
       this.logger.info('GLSP Generator starting in watch mode', { version: this.packageInfo.version });
 
@@ -91,29 +92,32 @@ export class WatchCommand extends BaseCommand<WatchArgs> {
         throw new Error('Grammar file is required');
       }
 
-      const watcher = new GrammarWatcher(args.grammar, args.output!, {
-        serve: args.serve,
-        port: args.port,
-        debounceMs: args.debounce,
-        config: args.config,
-        clearConsole: args.clear,
-        verbose: args.verbose
-      });
+      this.logger.error('Watch mode temporarily disabled during refactoring');
+      process.exit(1);
 
-      // Handle graceful shutdown
-      process.on('SIGINT', async () => {
-        this.logger.info('Shutting down watch mode');
-        await watcher.stop();
-        process.exit(0);
-      });
+      // const watcher = new GrammarWatcher(args.grammar, args.output!, {
+      //   serve: args.serve,
+      //   port: args.port,
+      //   debounceMs: args.debounce,
+      //   config: args.config,
+      //   clearConsole: args.clear,
+      //   verbose: args.verbose
+      // });
 
-      process.on('SIGTERM', async () => {
-        await watcher.stop();
-        process.exit(0);
-      });
+      // // Handle graceful shutdown
+      // process.on('SIGINT', async () => {
+      //   this.logger.info('Shutting down watch mode');
+      //   await watcher.stop();
+      //   process.exit(0);
+      // });
 
-      // Start watching
-      await watcher.start();
+      // process.on('SIGTERM', async () => {
+      //   await watcher.stop();
+      //   process.exit(0);
+      // });
+
+      // // Start watching
+      // await watcher.start();
 
     } catch (error) {
       this.logger.error('Watch mode failed', error);

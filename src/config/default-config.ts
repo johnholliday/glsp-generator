@@ -7,7 +7,8 @@ export const DEFAULT_CONFIG: GLSPConfig = {
         version: '1.0.0',
         publisher: 'my-company',
         description: 'A GLSP-based visual modeling tool',
-        license: 'MIT'
+        license: 'MIT',
+        fileExtension: 'sm'
     },
     dependencies: {
         '@eclipse-glsp/server': '^2.0.0',

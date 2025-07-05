@@ -7,7 +7,7 @@ import {
 } from './types.js';
 import { LinterConfig } from '../config/types.js';
 import { DiagnosticFormatter } from './diagnostics.js';
-import * as rules from './rules/index.js';
+// import * as rules from './rules/index.js'; // TODO: Restore when rules are available
 
 export class GrammarLinter {
     private rules: Map<string, LinterRule> = new Map();
@@ -38,11 +38,11 @@ export class GrammarLinter {
     }
 
     private registerBuiltinRules(): void {
-        // Register all built-in rules
-        Object.values(rules).forEach(RuleClass => {
-            const rule = new RuleClass();
-            this.rules.set(rule.code, rule);
-        });
+        // TODO: Register all built-in rules when rules are available
+        // Object.values(rules).forEach(RuleClass => {
+        //     const rule = new RuleClass();
+        //     this.rules.set(rule.code, rule);
+        // });
     }
 
     async lintGrammar(

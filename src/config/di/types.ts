@@ -7,6 +7,18 @@ export const TYPES = {
     // Commands
     Command: Symbol.for('Command'),
 
+    // Service Interfaces
+    ILoggerService: Symbol.for('ILoggerService'),
+    IGrammarParserService: Symbol.for('IGrammarParserService'),
+    ILinterService: Symbol.for('ILinterService'),
+    IValidationReporterService: Symbol.for('IValidationReporterService'),
+    IDocumentationGeneratorService: Symbol.for('IDocumentationGeneratorService'),
+    ITypeSafetyGeneratorService: Symbol.for('ITypeSafetyGeneratorService'),
+    ITestGeneratorService: Symbol.for('ITestGeneratorService'),
+    ICICDGeneratorService: Symbol.for('ICICDGeneratorService'),
+    ITemplateSystemService: Symbol.for('ITemplateSystemService'),
+    IPerformanceOptimizerService: Symbol.for('IPerformanceOptimizerService'),
+    
     // Services
     GLSPGenerator: Symbol.for('GLSPGenerator'),
     ConfigLoader: Symbol.for('ConfigLoader'),

@@ -7,6 +7,7 @@ export interface GrammarProperty {
   type: string;
   optional: boolean;
   array: boolean;
+  reference?: boolean;
 }
 
 export interface GrammarInterface {

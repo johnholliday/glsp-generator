@@ -12,6 +12,7 @@ describe('MemoryManager', () => {
     let mockPerformanceMonitor: IPerformanceMonitor;
     let mockSystemInfoService: ISystemInfoService;
     let mockConfig: PerformanceConfig;
+    let originalMemoryUsage: typeof process.memoryUsage;
 
     const mockMemoryUsage: MemoryUsage = {
         heapUsed: 100 * 1024 * 1024, // 100MB
@@ -22,13 +23,18 @@ describe('MemoryManager', () => {
     };
 
     beforeEach(() => {
+        // Save original process.memoryUsage
+        originalMemoryUsage = process.memoryUsage;
+        
+        // Mock process.memoryUsage globally for all tests
+        process.memoryUsage = vi.fn().mockReturnValue(mockMemoryUsage);
         container = new Container();
 
         // Create mocks
         mockPerformanceMonitor = {
-            getMemoryUsage: vi.fn().mockReturnValue(mockMemoryUsage),
-            isMemoryPressure: vi.fn().mockReturnValue(false),
-            forceGC: vi.fn().mockReturnValue(true),
+            getMemoryUsage: vi.fn().mockResolvedValue(mockMemoryUsage),
+            isMemoryPressure: vi.fn().mockResolvedValue(false),
+            forceGC: vi.fn().mockResolvedValue(true),
             startOperation: vi.fn().mockReturnValue(() => { }),
             recordMetric: vi.fn(),
             printSummary: vi.fn(),
@@ -64,6 +70,9 @@ describe('MemoryManager', () => {
         // Clean up memory manager to prevent event listener leaks
         memoryManager.stopMonitoring();
         memoryManager.removeAllListeners();
+        
+        // Restore original process.memoryUsage
+        process.memoryUsage = originalMemoryUsage;
     });
 
     describe('constructor', () => {
@@ -115,32 +124,62 @@ describe('MemoryManager', () => {
 
     describe('memory usage', () => {
         it('should get current memory usage', () => {
+            // Mock process.memoryUsage since MemoryManager uses it directly
+            const originalMemoryUsage = process.memoryUsage;
+            process.memoryUsage = vi.fn().mockReturnValue(mockMemoryUsage);
+
             const usage = memoryManager.getMemoryUsage();
             expect(usage).toEqual(mockMemoryUsage);
-            expect(mockPerformanceMonitor.getMemoryUsage).toHaveBeenCalled();
+
+            // Restore original
+            process.memoryUsage = originalMemoryUsage;
         });
 
         it('should detect memory pressure', () => {
-            mockPerformanceMonitor.isMemoryPressure = vi.fn().mockReturnValue(true);
+            // Mock process.memoryUsage to return high memory usage
+            const originalMemoryUsage = process.memoryUsage;
+            const highMemoryUsage = {
+                ...mockMemoryUsage,
+                heapUsed: 6 * 1024 * 1024 * 1024 // 6GB (above warning threshold)
+            };
+            process.memoryUsage = vi.fn().mockReturnValue(highMemoryUsage);
 
             const isUnderPressure = memoryManager.isMemoryPressure();
             expect(isUnderPressure).toBe(true);
+
+            // Restore original
+            process.memoryUsage = originalMemoryUsage;
         });
     });
 
     describe('garbage collection', () => {
         it('should force garbage collection', () => {
             const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            
+            // Mock global.gc
+            global.gc = vi.fn();
+            
+            // Mock process.memoryUsage to show memory reduction after GC
+            const beforeGC = { ...mockMemoryUsage, heapUsed: 200 * 1024 * 1024 };
+            const afterGC = { ...mockMemoryUsage, heapUsed: 100 * 1024 * 1024 };
+            let callCount = 0;
+            (process.memoryUsage as any).mockImplementation(() => {
+                return callCount++ === 0 ? beforeGC : afterGC;
+            });
 
             const result = memoryManager.forceGC();
 
             expect(result).toBe(true);
-            expect(mockPerformanceMonitor.forceGC).toHaveBeenCalled();
+            expect(global.gc).toHaveBeenCalled();
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🗑️  GC freed'));
+            
             consoleSpy.mockRestore();
+            delete global.gc;
         });
 
         it('should handle GC failure gracefully', () => {
-            mockPerformanceMonitor.forceGC = vi.fn().mockReturnValue(false);
+            // When global.gc is not available
+            delete global.gc;
 
             const result = memoryManager.forceGC();
             expect(result).toBe(false);
@@ -151,19 +190,27 @@ describe('MemoryManager', () => {
         it('should perform emergency cleanup', () => {
             const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
             const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            
+            // Mock global.gc for emergency cleanup
+            global.gc = vi.fn();
 
             memoryManager.emergencyCleanup();
 
             expect(consoleWarnSpy).toHaveBeenCalledWith('🚨 Emergency memory cleanup initiated');
-            expect(mockPerformanceMonitor.forceGC).toHaveBeenCalled();
+            expect(global.gc).toHaveBeenCalled();
 
             consoleWarnSpy.mockRestore();
             consoleLogSpy.mockRestore();
+            delete global.gc;
         });
     });
 
     describe('memory statistics', () => {
         it('should return memory statistics', () => {
+            // Mock process.memoryUsage for consistent results
+            const originalMemoryUsage = process.memoryUsage;
+            process.memoryUsage = vi.fn().mockReturnValue(mockMemoryUsage);
+
             const stats = memoryManager.getStats();
 
             expect(stats).toHaveProperty('current');
@@ -172,6 +219,9 @@ describe('MemoryManager', () => {
             expect(stats).toHaveProperty('gcCount');
             expect(stats).toHaveProperty('lastGC');
             expect(stats.current).toEqual(mockMemoryUsage);
+
+            // Restore original
+            process.memoryUsage = originalMemoryUsage;
         });
 
         it('should allow setting custom thresholds', () => {

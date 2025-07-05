@@ -58,6 +58,12 @@
           "items": {
             "type": "string"
           }
+        },
+        "fileExtension": {
+          "type": "string",
+          "description": "File extension for language files (without dot)",
+          "pattern": "^[a-z0-9]+$",
+          "default": "sm"
         }
       },
       "additionalProperties": false

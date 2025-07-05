@@ -1,0 +1,46 @@
+import { injectable } from 'inversify';
+import { SModelFactory, SModelElementImpl, SGraphImpl, SNodeImpl, SEdgeImpl, SLabelImpl } from 'sprotty';
+import { Action } from 'sprotty-protocol';
+
+/**
+ * Model factory for creating {{projectName}} diagram elements
+ */
+@injectable()
+export class {{toPascalCase projectName}}ModelFactory extends SModelFactory {
+    
+    createElement(schema: any, parent?: any): any {
+        const element = super.createElement(schema, parent);
+        
+        // Add custom initialization if needed
+        switch (schema.type) {
+            {{#each interfaces}}
+            case '{{toLowerCase name}}':
+                this.initialize{{name}}(element as SNodeImpl, schema);
+                break;
+            {{/each}}
+        }
+        
+        return element;
+    }
+
+    {{#each interfaces}}
+    private initialize{{name}}(node: SNodeImpl, schema: any): void {
+        // Set default bounds if not specified
+        if (!node.bounds) {
+            node.bounds = {
+                x: schema.position?.x || 0,
+                y: schema.position?.y || 0,
+                width: schema.size?.width || {{#if (eq name "State")}}100{{else if (eq name "Transition")}}150{{else}}120{{/if}},
+                height: schema.size?.height || {{#if (eq name "State")}}60{{else if (eq name "Transition")}}40{{else}}80{{/if}}
+            };
+        }
+        
+        // Copy custom properties
+        {{#each properties}}
+        if (schema.{{name}} !== undefined) {
+            (node as any).{{name}} = schema.{{name}};
+        }
+        {{/each}}
+    }
+    {{/each}}
+}

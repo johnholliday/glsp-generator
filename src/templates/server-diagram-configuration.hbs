@@ -1,0 +1,39 @@
+import { injectable } from 'inversify';
+import { DiagramConfiguration, ShapeTypeHint, EdgeTypeHint } from '@eclipse-glsp/server';
+
+/**
+ * Diagram configuration for {{projectName}}
+ */
+@injectable()
+export class {{toPascalCase projectName}}DiagramConfiguration implements DiagramConfiguration {
+    get diagramType(): string {
+        return '{{projectName}}-diagram';
+    }
+
+    get shapeTypeHints(): ShapeTypeHint[] {
+        return [
+            {{#each interfaces}}
+            {
+                elementTypeId: '{{toLowerCase name}}',
+                deletable: true,
+                reparentable: {{#if (eq name "StateMachine")}}false{{else}}true{{/if}},
+                repositionable: true,
+                resizable: true
+            }{{#unless @last}},{{/unless}}
+            {{/each}}
+        ];
+    }
+
+    get edgeTypeHints(): EdgeTypeHint[] {
+        return [
+            {
+                elementTypeId: 'edge',
+                deletable: true,
+                repositionable: false,
+                routable: true,
+                sourceElementTypeIds: ['state'],
+                targetElementTypeIds: ['state']
+            }
+        ];
+    }
+}

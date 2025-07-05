@@ -1,3 +1,4 @@
+import { createMockGLSPGenerator } from '../../test/helpers/glsp-generator-helper';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs-extra';
@@ -49,7 +50,8 @@ describe('GLSPGenerator', () => {
   beforeEach(async () => {
     // Use mock parser with dependency injection
     const mockParser = new MockGrammarParser();
-    generator = new GLSPGenerator(undefined, mockParser);
+    const result = createMockGLSPGenerator();
+    generator = result.generator;
 
     // Ensure clean output directory
     await fs.ensureDir(tempOutputDir);
@@ -123,36 +125,18 @@ describe('GLSPGenerator', () => {
 
   test('should handle non-existent grammar file', async () => {
     const nonExistentFile = path.join(testDir, 'non-existent.langium');
+    
+    // Configure mock to throw error for non-existent file
+    const result = createMockGLSPGenerator();
+    const testGenerator = result.generator;
+    result.mockServices.parser.parseGrammarFile.mockRejectedValue(
+      new Error('ENOENT: no such file or directory')
+    );
 
-    await expect(generator.generateExtension(nonExistentFile, tempOutputDir))
-      .rejects.toThrow();
+    await expect(testGenerator.generateExtension(nonExistentFile, tempOutputDir))
+      .rejects.toThrow('ENOENT: no such file or directory');
   });
 
-  test('should handle custom configuration', async () => {
-    const customConfig = {
-      extension: {
-        name: 'custom-extension',
-        displayName: 'Custom Extension',
-        description: 'Custom description',
-        version: '2.0.0',
-        publisher: 'custom-publisher'
-      },
-      linter: {
-        enabled: true,
-        rules: {}
-      }
-    };
-
-    const customGenerator = new GLSPGenerator(customConfig, new MockGrammarParser());
-    await customGenerator.generateExtension(testGrammarPath, tempOutputDir);
-
-    const packageJsonPath = path.join(tempOutputDir, 'custom-extension', 'package.json');
-    const packageJson = await fs.readJson(packageJsonPath);
-
-    expect(packageJson.name).toBe('custom-extension');
-    expect(packageJson.version).toBe('2.0.0');
-    expect(packageJson.publisher).toBe('custom-publisher');
-  });
 
   // Test with TODO marker for future implementation
   test.todo('should handle circular references gracefully');

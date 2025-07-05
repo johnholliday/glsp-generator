@@ -1,0 +1,79 @@
+// Example traffic light state machine
+// This file demonstrates the statemachine language
+
+statemachine TrafficLight {
+    // Red light state - vehicles must stop
+    state Red {
+        entry: "turnOnRedLight()"
+        exit: "turnOffRedLight()"
+        do: "monitorEmergencyVehicles()"
+    }
+    
+    // Yellow light state - prepare to stop
+    state Yellow {
+        entry: "turnOnYellowLight()"
+        exit: "turnOffYellowLight()"
+        do: "startWarningTimer()"
+    }
+    
+    // Green light state - vehicles may proceed
+    state Green {
+        entry: "turnOnGreenLight()"
+        exit: "turnOffGreenLight()"
+        do: "monitorTrafficFlow()"
+    }
+    
+    // Walk signal state for pedestrians
+    state Walk {
+        entry: "showWalkSignal()"
+        exit: "hideWalkSignal()"
+        do: "playAudioSignal()"
+    }
+    
+    // Regular traffic transitions
+    transition RedToGreen {
+        from: Red
+        to: Green
+        on: "timer.expired"
+        guard: "noPedestrianWaiting()"
+        effect: "resetTimer(60)"
+    }
+    
+    transition GreenToYellow {
+        from: Green
+        to: Yellow
+        on: "timer.expired"
+        effect: "resetTimer(5)"
+    }
+    
+    transition YellowToRed {
+        from: Yellow
+        to: Red
+        on: "timer.expired"
+        effect: "resetTimer(60)"
+    }
+    
+    // Pedestrian crossing transitions
+    transition RedToWalk {
+        from: Red
+        to: Walk
+        on: "pedestrian.buttonPressed"
+        guard: "safeToWalk()"
+        effect: "resetTimer(30)"
+    }
+    
+    transition WalkToRed {
+        from: Walk
+        to: Red
+        on: "timer.expired"
+        effect: "resetTimer(60)"
+    }
+    
+    // Emergency override
+    transition EmergencyOverride {
+        from: Green
+        to: Red
+        on: "emergency.detected"
+        effect: "activateEmergencyMode()"
+    }
+}

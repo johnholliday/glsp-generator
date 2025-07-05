@@ -6,7 +6,7 @@
   "publisher": "{{config.extension.publisher}}",
   "packageManager": "yarn@1.22.22",
   "type": "module",
-  "main": "lib/index.js",
+  "main": "lib/extension/index.js",
   "private": true,
   "workspaces": false,
   {{#if config.extension.repository}}
@@ -19,14 +19,87 @@
   {{/if}}
   "license": "{{config.extension.license}}",
   "engines": {
+    "vscode": "^1.75.0",
     "node": ">=16.0.0",
     "yarn": ">=1.0.0 <2.0.0"
   },
+  "categories": ["Programming Languages"],
+  "activationEvents": [
+    "onCommand:{{projectName}}.diagram.open",
+    "onLanguage:{{projectName}}",
+    "onCustomEditor:{{projectName}}.diagram",
+    "workspaceContains:**/*.{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "{{projectName}}",
+        "aliases": ["{{toPascalCase projectName}}", "{{projectName}}"],
+        "extensions": [".{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "{{projectName}}",
+        "scopeName": "source.{{projectName}}",
+        "path": "./syntaxes/{{projectName}}.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "{{projectName}}.diagram.open",
+        "title": "{{toPascalCase projectName}}: Open as Diagram",
+        "category": "{{toPascalCase projectName}}",
+        "icon": "$(symbol-structure)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}",
+          "command": "{{projectName}}.diagram.open",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}",
+          "command": "{{projectName}}.diagram.open",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}",
+          "command": "{{projectName}}.diagram.open",
+          "group": "navigation"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "{{projectName}}.diagram",
+        "displayName": "{{toPascalCase projectName}} Diagram",
+        "selector": [
+          {
+            "filenamePattern": "*.{{#if config.extension.fileExtension}}{{config.extension.fileExtension}}{{else}}{{projectName}}{{/if}}"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
   "scripts": {
-    "build": "yarn tsc",
-    "watch": "yarn tsc --watch",
-    "clean": "yarn rimraf lib",
-    "prepare": "yarn clean && yarn build"{{#if config.generation.generateTests}},
+    "build": "yarn build:extension && yarn build:webview",
+    "build:extension": "yarn tsc",
+    "build:webview": "webpack --config webpack.config.js",
+    "watch": "concurrently \"yarn watch:extension\" \"yarn watch:webview\"",
+    "watch:extension": "yarn tsc --watch",
+    "watch:webview": "webpack --config webpack.config.js --watch",
+    "clean": "yarn rimraf lib dist",
+    "prepare": "yarn clean && yarn build",
+    "vscode:prepublish": "yarn build"{{#if config.generation.generateTests}},
     "test": "yarn vitest"{{/if}}
   },
   "dependencies": {
@@ -34,13 +107,24 @@
     "@eclipse-glsp/server": "{{config.dependencies.[@eclipse-glsp/server]}}",
     "@eclipse-glsp/theia-integration": "{{config.dependencies.[@eclipse-glsp/theia-integration]}}",
     "@theia/core": "{{config.dependencies.[@theia/core]}}",
-    "inversify": "^6.0.0"{{#each config.dependencies.customDeps}},
+    "inversify": "^6.0.0",
+    "reflect-metadata": "^0.2.0",
+    "sprotty": "^1.0.0",
+    "sprotty-protocol": "^1.0.0"{{#each config.dependencies.customDeps}},
     "{{@key}}": "{{this}}"{{/each}}
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
     "typescript": "^5.0.0",
-    "rimraf": "^5.0.0"{{#if config.generation.generateTests}},
+    "rimraf": "^5.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "css-loader": "^6.0.0",
+    "style-loader": "^3.0.0",
+    "concurrently": "^7.0.0",
+    "process": "^0.11.10"{{#if config.generation.generateTests}},
     "vitest": "^1.0.0",
     "@vitest/ui": "^1.0.0"{{/if}}
   },

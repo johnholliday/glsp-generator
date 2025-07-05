@@ -1,21 +1,60 @@
-import { CreateNodeOperationHandler, CreateNodeOperation } from '@eclipse-glsp/server';
 import { injectable } from 'inversify';
 import { {{toPascalCase projectName}}Model } from '../../common/{{projectName}}-model.js';
-import { {{toPascalCase projectName}}ServerModel } from '../model/{{projectName}}-server-model.js';
 
+/**
+ * Handler for creating {{projectName}} nodes.
+ * 
+ * Note: This is a simplified template that provides the basic structure.
+ * You'll need to integrate this with your GLSP server implementation
+ * according to your specific version and requirements.
+ */
 @injectable()
-export class Create{{toPascalCase projectName}}NodeHandler extends CreateNodeOperationHandler {
-    elementTypeIds = [
+export class Create{{toPascalCase projectName}}NodeHandler {
+    readonly elementTypeIds = [
 {{#each interfaces}}
         {{toPascalCase ../projectName}}Model.TypeHierarchy.{{toCamelCase name}},
 {{/each}}
     ];
 
-    getLabel(): string {
-        return 'Create {{toPascalCase projectName}} Node';
+    /**
+     * Creates a new element based on the given type ID.
+     * This is a simplified implementation - adapt as needed for your GLSP version.
+     */
+    createNode(typeId: string, x?: number, y?: number): any {
+        // Use the model factory to create elements
+        const element = this.createDefaultElement(typeId);
+        
+        if (element && x !== undefined && y !== undefined) {
+            element.position = { x, y };
+        }
+        
+        return element;
     }
 
-    protected createNode(operation: CreateNodeOperation): {{toPascalCase projectName}}Model.{{toPascalCase projectName}}Element | undefined {
-        return {{toPascalCase projectName}}ServerModel.createDefaultElement(operation.elementTypeId);
+    private createDefaultElement(typeId: string): any {
+        switch (typeId) {
+{{#each interfaces}}
+            case {{toPascalCase ../projectName}}Model.TypeHierarchy.{{toCamelCase name}}:
+                return {
+                    type: typeId,
+                    id: `${typeId}_${Date.now()}`,
+{{#each properties}}
+{{#unless array}}
+{{#if reference}}
+                    {{name}}: {{#if optional}}undefined{{else}}null{{/if}}, // Reference - must be set after creation
+{{else}}
+                    {{name}}: {{#if optional}}undefined{{else}}{{#if (eq type "string")}}'default'{{else if (eq type "number")}}0{{else if (eq type "boolean")}}false{{else}}'default'{{/if}}{{/if}},
+{{/if}}
+{{else}}
+                    {{name}}: [],
+{{/unless}}
+{{/each}}
+                    position: { x: 0, y: 0 },
+                    size: { width: 100, height: 50 }
+                };
+{{/each}}
+            default:
+                return undefined;
+        }
     }
 }

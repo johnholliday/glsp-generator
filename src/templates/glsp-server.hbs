@@ -1,0 +1,85 @@
+import { injectable, inject, multiInject } from 'inversify';
+import {
+    ActionHandler,
+    ActionHandlerRegistry,
+    ClientSessionManager,
+    CreateNodeOperation,
+    CreateEdgeOperation,
+    DefaultGLSPServerModule,
+    DiagramConfiguration,
+    GModelFactory,
+    GModelIndex,
+    GNode,
+    GEdge,
+    GGraph,
+    GLSPServer,
+    GLSPServerModule,
+    Logger,
+    ModelState,
+    OperationHandler,
+    OperationHandlerRegistry,
+    RequestModelAction,
+    SaveModelAction,
+    SourceModelStorage,
+    ShapeTypeHint,
+    EdgeTypeHint
+} from '@eclipse-glsp/server';
+import { {{toPascalCase projectName}}ModelState } from './model/{{projectName}}-model-state.js';
+import { {{toPascalCase projectName}}DiagramConfiguration } from './{{projectName}}-diagram-configuration.js';
+
+/**
+ * Main GLSP server module for {{projectName}} diagrams
+ */
+export const {{toPascalCase projectName}}ServerModule = new GLSPServerModule()
+    .configure(DefaultGLSPServerModule)
+    .rebind(DiagramConfiguration)
+    .to({{toPascalCase projectName}}DiagramConfiguration)
+    .inSingletonScope()
+    .rebind(ModelState)
+    .to({{toPascalCase projectName}}ModelState)
+    .inSingletonScope()
+    .rebind(SourceModelStorage)
+    .to({{toPascalCase projectName}}ModelStorage)
+    .inSingletonScope();
+
+/**
+ * Model storage handler for {{projectName}} diagrams
+ */
+@injectable()
+export class {{toPascalCase projectName}}ModelStorage implements SourceModelStorage {
+    @inject(Logger) protected logger: Logger;
+    @inject(ModelState) protected modelState: {{toPascalCase projectName}}ModelState;
+
+    async loadSourceModel(action: RequestModelAction): Promise<void> {
+        const sourceUri = action.options?.sourceUri;
+        if (!sourceUri) {
+            throw new Error('No source URI provided');
+        }
+
+        // TODO: Load model from file
+        // For now, create a default model
+        const model = this.createDefaultModel();
+        this.modelState.updateRoot(model);
+    }
+
+    async saveSourceModel(action: SaveModelAction): Promise<void> {
+        const sourceUri = this.modelState.get('sourceUri');
+        if (!sourceUri) {
+            throw new Error('No source URI available');
+        }
+
+        // TODO: Save model to file
+        this.logger.info(`Saving model to ${sourceUri}`);
+    }
+
+    private createDefaultModel(): GGraph {
+        return {
+            id: 'graph',
+            type: 'graph',
+            children: []
+        };
+    }
+}
+
+
+

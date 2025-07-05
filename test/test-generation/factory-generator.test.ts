@@ -7,7 +7,7 @@ import { ParsedGrammar } from '../../src/types/grammar';
 
 describe('FactoryGenerator', () => {
     let generator: FactoryGenerator;
-    let tempDir: string;
+    let tempDir: string = '';
     
     beforeEach(async () => {
         generator = new FactoryGenerator();

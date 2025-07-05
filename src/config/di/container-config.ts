@@ -36,11 +36,11 @@ import {
     MetricsService,
     HealthCheckService
 } from './services.js';
-import { LangiumGrammarParser } from '../../utils/langium-grammar-parser.refactored.js';
-import { GrammarLinter } from '../../validation/linter.refactored.js';
-import { TypeSafetyGenerator } from '../../type-safety/type-safety-generator.refactored.js';
-import { TestGenerator } from '../../test-generation/test-generator.refactored.js';
-import { TemplatePackageManager } from '../../templates/package-manager.refactored.js';
+import { LangiumGrammarParser } from '../../utils/langium-grammar-parser.js';
+import { GrammarLinter } from '../../validation/linter.js';
+import { TypeSafetyGenerator } from '../../type-safety/type-safety-generator.js';
+import { TestGenerator } from '../../test-generation/test-generator.js';
+import { TemplatePackageManager } from '../../templates/package-manager.js';
 import { LinterConfig } from '../types.js';
 
 /**

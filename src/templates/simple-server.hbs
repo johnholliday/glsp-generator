@@ -1,0 +1,59 @@
+import { injectable } from 'inversify';
+import { DiagramConfiguration, ServerModule, GModelElementConstructor, ShapeTypeHint, EdgeTypeHint, GNode, GEdge, GGraph } from '@eclipse-glsp/server';
+
+/**
+ * Simple diagram configuration for {{projectName}}
+ */
+@injectable()
+export class {{toPascalCase projectName}}DiagramConfiguration implements DiagramConfiguration {
+    readonly diagramType = '{{projectName}}-diagram';
+    readonly layoutKind: any = undefined;
+    readonly needsClientLayout = true;
+    readonly animatedUpdate = true;
+    
+    get typeMapping(): Map<string, GModelElementConstructor> {
+        const mapping = new Map<string, GModelElementConstructor>();
+        mapping.set('graph', GGraph);
+        {{#each interfaces}}
+        mapping.set('{{toLowerCase name}}', GNode);
+        {{/each}}
+        mapping.set('edge', GEdge);
+        return mapping;
+    }
+    
+    get shapeTypeHints(): ShapeTypeHint[] {
+        return [
+            {{#each interfaces}}
+            {
+                elementTypeId: '{{toLowerCase name}}',
+                deletable: true,
+                reparentable: true,
+                repositionable: true,
+                resizable: true
+            }{{#unless @last}},{{/unless}}
+            {{/each}}
+        ];
+    }
+    
+    get edgeTypeHints(): EdgeTypeHint[] {
+        return [{
+            elementTypeId: 'edge',
+            deletable: true,
+            repositionable: false,
+            routable: true,
+            sourceElementTypeIds: [{{#each interfaces}}'{{toLowerCase name}}'{{#unless @last}}, {{/unless}}{{/each}}],
+            targetElementTypeIds: [{{#each interfaces}}'{{toLowerCase name}}'{{#unless @last}}, {{/unless}}{{/each}}]
+        }];
+    }
+}
+
+/**
+ * Server module for {{projectName}} diagrams
+ */
+export const create{{toPascalCase projectName}}ServerModule = () => {
+    const module = new ServerModule();
+    module.configure = (bind, unbind, isBound, rebind) => {
+        bind(DiagramConfiguration).to({{toPascalCase projectName}}DiagramConfiguration).inSingletonScope();
+    };
+    return module;
+};

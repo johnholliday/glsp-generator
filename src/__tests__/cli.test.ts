@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import os from 'os';
 
 describe('GLSP CLI', () => {
-  let tempDir: string;
+  let tempDir: string = '';
   
   beforeEach(async () => {
     // Create temporary directory for test outputs

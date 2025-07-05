@@ -1,0 +1,37 @@
+{
+  "totalDuration": 108,
+  "phases": [
+    [
+      "cache-grammar-get",
+      {
+        "duration": 0.542765,
+        "memoryDelta": 11248,
+        "peakMemory": 26710424,
+        "startTime": 770254195712948,
+        "endTime": 770254196255713
+      }
+    ],
+    [
+      "cache-grammar-set",
+      {
+        "duration": 0.105824,
+        "memoryDelta": 15216,
+        "peakMemory": 32830016,
+        "startTime": 770254262569707,
+        "endTime": 770254262675531
+      }
+    ],
+    [
+      "cache-load",
+      {
+        "duration": 67.544304,
+        "memoryDelta": 6201736,
+        "peakMemory": 32935248,
+        "startTime": 770254196706472,
+        "endTime": 770254264250776
+      }
+    ]
+  ],
+  "memoryPeak": 32935248,
+  "recommendations": []
+}
