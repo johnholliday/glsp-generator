@@ -12,10 +12,9 @@ src/__tests__/temp-output/
 coverage/
 sandbox/
 .vitest-ui.pid
-test-output/
 
-# Generated output from VSCode context menu
-generated/
+# Cache
+.glsp-cache/
 
 # IDE
 .idea/
@@ -26,6 +25,8 @@ generated/
 # OS
 .DS_Store
 Thumbs.db
+*.Zone.Identifier
+*:Zone.Identifier
 
 # Logs
 *.log

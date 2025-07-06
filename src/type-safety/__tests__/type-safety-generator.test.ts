@@ -9,7 +9,7 @@ describe('TypeSafetyGenerator', () => {
   let generator: TypeSafetyGenerator;
   let testGrammar: ParsedGrammar;
   let testConfig: GLSPConfig;
-  const outputDir = path.join(process.cwd(), 'test-output-type-safety');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'type-safety');
 
   beforeEach(async () => {
     // Ensure clean state

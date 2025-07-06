@@ -10,7 +10,7 @@ describe('ReadmeGenerator', () => {
   let generator: ReadmeGenerator;
   let testGrammar: ParsedGrammar;
   let config: GLSPConfig;
-  const outputDir = path.join(process.cwd(), 'test-output-readme');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'readme-generator');
 
   beforeEach(async () => {
     generator = new ReadmeGenerator();

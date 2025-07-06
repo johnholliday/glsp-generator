@@ -10,7 +10,7 @@ describe('DocumentationGenerator', () => {
   let generator: DocumentationGenerator;
   let testGrammar: ParsedGrammar;
   let config: GLSPConfig;
-  const outputDir = path.join(process.cwd(), 'test-output-docs');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'documentation-generator');
 
   beforeEach(async () => {
     generator = new DocumentationGenerator();

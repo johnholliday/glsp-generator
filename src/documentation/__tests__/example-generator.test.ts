@@ -7,7 +7,7 @@ import path from 'path';
 describe('ExampleModelGenerator', () => {
   let generator: ExampleModelGenerator;
   let testGrammar: ParsedGrammar;
-  const outputDir = path.join(process.cwd(), 'test-output-examples');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'example-generator');
 
   beforeEach(async () => {
     generator = new ExampleModelGenerator();

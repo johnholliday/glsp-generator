@@ -7,7 +7,7 @@ import path from 'path';
 describe('DeclarationGenerator', () => {
   let generator: DeclarationGenerator;
   let testGrammar: ParsedGrammar;
-  const outputDir = path.join(process.cwd(), 'test-output-declarations');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'declaration-generator');
 
   beforeEach(async () => {
     generator = new DeclarationGenerator();

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Container } from 'inversify';
 import 'reflect-metadata';
+import path from 'path';
 import { DocumentationGenerator } from '../generator.js';
 import {
     IDocumentationRenderer,
@@ -62,7 +63,7 @@ describe('DocumentationGenerator', () => {
             projectName: 'Test Project',
             description: 'Test Description',
             version: '1.0.0',
-            outputDir: './test-output',
+            outputDir: path.join(process.cwd(), 'src', '__tests__', 'temp-output'),
             templatesDir: './test-templates',
             features: ['Feature 1', 'Feature 2']
         };
@@ -127,7 +128,7 @@ describe('DocumentationGenerator', () => {
             await generator.generate();
 
             // Verify output directory creation
-            expect(mockFileSystem.ensureDir).toHaveBeenCalledWith('./test-output');
+            expect(mockFileSystem.ensureDir).toHaveBeenCalledWith(path.join(process.cwd(), 'src', '__tests__', 'temp-output'));
 
             // Verify data collection
             expect(mockCollector.collect).toHaveBeenCalledOnce();
@@ -139,10 +140,11 @@ describe('DocumentationGenerator', () => {
             expect(mockRenderer.renderExamples).toHaveBeenCalledWith(mockDocData);
 
             // Verify file writing operations (path.join normalizes paths)
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/README.md', '# Overview\nMocked overview content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/api.md', '# API\nMocked API content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/architecture.md', '# Architecture\nMocked architecture content');
-            expect(mockFileSystem.writeFile).toHaveBeenCalledWith('test-output/examples.md', '# Examples\nMocked examples content');
+            const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith(path.join(outputDir, 'README.md'), '# Overview\nMocked overview content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith(path.join(outputDir, 'api.md'), '# API\nMocked API content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith(path.join(outputDir, 'architecture.md'), '# Architecture\nMocked architecture content');
+            expect(mockFileSystem.writeFile).toHaveBeenCalledWith(path.join(outputDir, 'examples.md'), '# Examples\nMocked examples content');
         });
 
         it('should use default output directory when not configured', async () => {

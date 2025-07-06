@@ -7,7 +7,7 @@ import path from 'path';
 describe('ValidationGenerator', () => {
   let generator: ValidationGenerator;
   let testGrammar: ParsedGrammar;
-  const outputDir = path.join(process.cwd(), 'test-output-validation');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'validation-generator');
 
   beforeEach(async () => {
     generator = new ValidationGenerator();

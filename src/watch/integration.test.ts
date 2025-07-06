@@ -6,7 +6,7 @@ import path from 'path';
 const testDir = __filename ? path.dirname(__filename) : process.cwd();
 
 describe('Watch Mode Integration Tests', () => {
-    const TEST_DIR = path.join(process.cwd(), 'test-output', 'watch-integration');
+    const TEST_DIR = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'watch-integration');
     const GRAMMAR_FILE = path.join(TEST_DIR, 'test.langium');
     const OUTPUT_DIR = path.join(TEST_DIR, 'output');
     let watchProcess: ChildProcess | null = null;

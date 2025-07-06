@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 describe('Grammar Generation Integration Tests', () => {
   let generator: GLSPGenerator;
-  const outputBase = path.join(process.cwd(), 'test-output');
+  const outputBase = path.join(process.cwd(), 'src', '__tests__', 'temp-output');
 
   beforeEach(async () => {
     generator = new GLSPGenerator();

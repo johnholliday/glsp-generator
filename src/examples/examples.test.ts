@@ -4,7 +4,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 
 const EXAMPLES_DIR = path.join(process.cwd(), 'examples');
-const TEST_OUTPUT_DIR = path.join(process.cwd(), 'test-output/examples-test');
+const TEST_OUTPUT_DIR = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'examples-test');
 
 describe('Grammar Examples', () => {
     beforeAll(async () => {

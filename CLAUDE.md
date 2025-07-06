@@ -112,7 +112,6 @@ glsp-generator/
 │   ├── mocks/                 # Mock implementations
 │   ├── helpers/               # Test helper utilities
 │   └── utils/                 # Test framework utilities
-├── generated/                  # Generated output from context menu (git-ignored)
 ├── docs/                       # Documentation
 │   ├── architecture/          # C4 diagrams and architecture docs
 │   ├── MIGRATION_GUIDE.md     # v1 to v2 migration guide
@@ -777,7 +776,7 @@ node --inspect dist/cli.js generate <grammar-file>
    - **Generate GLSP Extension (Dev Mode)** - Opens project in new VSCode window
    - **Generate GLSP Extension (Debug)** - Opens in extension development host
    - **Generate GLSP Extension (Project Only)** - Generates project without VSIX
-3. Output goes to `./generated/<grammar-name>/`
+3. Output goes to the directory specified in the command or a default output directory
 
 ### Using Command Line
 1. Define your language in a `.langium` file
@@ -789,8 +788,8 @@ node --inspect dist/cli.js generate <grammar-file>
    - Project only: `node dist/cli.js generate my-language.langium --no-vsix`
 
 ### Manual Development
-1. Generate project: `node dist/cli.js generate my-language.langium --no-vsix`
-2. Navigate to output: `cd generated/my-language`
+1. Generate project: `node dist/cli.js generate my-language.langium -o ./my-output --no-vsix`
+2. Navigate to output: `cd my-output`
 3. Install dependencies: `yarn install` (uses Yarn 1.22)
 4. Build the extension: `yarn build`
 5. Test in Theia: `yarn theia start`

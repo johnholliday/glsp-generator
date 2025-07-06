@@ -7,7 +7,7 @@ import path from 'path';
 describe('ZodGenerator', () => {
   let generator: ZodGenerator;
   let testGrammar: ParsedGrammar;
-  const outputDir = path.join(process.cwd(), 'test-output-zod');
+  const outputDir = path.join(process.cwd(), 'src', '__tests__', 'temp-output', 'zod-generator');
 
   beforeEach(async () => {
     generator = new ZodGenerator();
