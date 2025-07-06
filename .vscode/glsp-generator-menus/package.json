@@ -1,0 +1,97 @@
+{
+  "name": "glsp-generator-menus",
+  "displayName": "GLSP Generator Context Menus",
+  "description": "Context menu commands for GLSP Generator",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:langium",
+    "workspaceContains:**/*.langium"
+  ],
+  "contributes": {
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateVSIX",
+          "group": "glsp-generator@1"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateDev",
+          "group": "glsp-generator@2"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateDebug",
+          "group": "glsp-generator@3"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateProject",
+          "group": "glsp-generator@4"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.validate",
+          "group": "glsp-generator@5"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateVSIX",
+          "group": "glsp-generator@1"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateDev",
+          "group": "glsp-generator@2"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateDebug",
+          "group": "glsp-generator@3"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.generateProject",
+          "group": "glsp-generator@4"
+        },
+        {
+          "when": "resourceExtname == .langium",
+          "command": "glsp-generator.validate",
+          "group": "glsp-generator@5"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "glsp-generator.generateVSIX",
+        "title": "Generate GLSP Extension (VSIX)"
+      },
+      {
+        "command": "glsp-generator.generateDev",
+        "title": "Generate GLSP Extension (Dev Mode)"
+      },
+      {
+        "command": "glsp-generator.generateDebug",
+        "title": "Generate GLSP Extension (Debug)"
+      },
+      {
+        "command": "glsp-generator.generateProject",
+        "title": "Generate GLSP Extension (Project Only)"
+      },
+      {
+        "command": "glsp-generator.validate",
+        "title": "Validate Langium Grammar"
+      }
+    ]
+  },
+  "main": "./extension.js"
+}

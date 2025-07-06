@@ -16,7 +16,7 @@ A TypeScript-based tool for generating Theia GLSP extensions from Langium gramma
 
 ## What's New
 
-### Version 2.1.127
+### Version 2.1.167
 - **Langium AST Parser**: Replaced regex-based parsing with Langium's official AST parser
 - **Fixed Type Generation**: Union types now generate proper TypeScript string literals
 - **Improved Naming**: Consistent PascalCase/camelCase naming throughout generated code
@@ -46,8 +46,11 @@ yarn setup:dev  # Creates global 'glsp' command for development
 ### Quick Start
 
 ```bash
-# Generate from grammar file
+# Generate VSIX package from grammar file (default)
 glsp gen my-grammar.langium
+
+# Development mode - generate and open in VSCode
+glsp gen my-grammar.langium --dev
 
 # Interactive mode
 glsp
@@ -68,25 +71,33 @@ glsp g <grammar> [output]
 
 **Options:**
 - `--config, -c <file>`: Configuration file
+- `--dev`: Development mode - generate project and open in VSCode
+- `--debug, -d`: Debug mode - open VSCode extension host with generated VSIX
+- `--no-vsix`: Skip VSIX packaging (generate project only)
 - `--watch, -w`: Watch for changes and regenerate
-- `--debug, -d`: Enable debug output
 - `--validate-only`: Only validate, don't generate
 - `--no-validate`: Skip validation
 - `--force, -f`: Overwrite existing files
 
 **Examples:**
 ```bash
-# Basic generation
+# Generate VSIX package (default)
 glsp gen state-machine.langium
 
-# Custom output directory
-glsp gen grammar.langium ./my-extension
+# Development mode - generate and open in VSCode
+glsp gen grammar.langium --dev
 
-# Watch mode
-glsp gen grammar.langium -w
+# Debug mode - generate VSIX and open extension host
+glsp gen grammar.langium --debug
 
-# Debug mode with custom output
-glsp gen grammar.langium ./output --debug
+# Generate project only (no VSIX)
+glsp gen grammar.langium --no-vsix
+
+# Custom output directory for VSIX
+glsp gen grammar.langium ./output
+
+# Watch mode with project generation
+glsp gen grammar.langium --no-vsix -w
 ```
 
 #### Validate Grammar
@@ -273,6 +284,25 @@ await generator.generateExtension('my-domain.langium', './output');
 // Validate grammar
 const isValid = await generator.validateGrammar('my-domain.langium');
 ```
+
+## Default VSIX Generation
+
+By default, the generator creates a VSIX package ready for installation in VSCode/Theia:
+
+```bash
+# Generates state-machine-glsp-1.0.0.vsix in ./output
+glsp gen state-machine.langium
+
+# Install the generated VSIX
+code --install-extension ./output/state-machine-glsp-1.0.0.vsix
+```
+
+The VSIX generation process:
+1. Creates extension in a temporary directory
+2. Runs `yarn install` and `yarn build`
+3. Packages as VSIX using `vsce`
+4. Copies VSIX to output directory
+5. Cleans up temporary files
 
 ## Generated Structure
 
@@ -475,7 +505,7 @@ glsp gen grammar.langium
 glsp gen grammar.langium --config ./config/.glsprc.json
 
 # Override config values
-glsp gen grammar.langium --set extension.version=2.1.127 --set styling.theme=dark
+glsp gen grammar.langium --set extension.version=2.1.167 --set styling.theme=dark
 ```
 
 #### With Watch Mode

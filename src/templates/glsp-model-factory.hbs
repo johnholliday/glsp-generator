@@ -27,11 +27,19 @@ export class {{toPascalCase projectName}}ModelFactory extends SModelFactory {
     private initialize{{name}}(node: SNodeImpl, schema: any): void {
         // Set default bounds if not specified
         if (!node.bounds) {
+            {{#if metadata}}
+            const defaultWidth = {{#if metadata.layoutOptions.minWidth}}{{metadata.layoutOptions.minWidth}}{{else}}120{{/if}};
+            const defaultHeight = {{#if metadata.layoutOptions.minHeight}}{{metadata.layoutOptions.minHeight}}{{else}}80{{/if}};
+            {{else}}
+            const defaultWidth = {{#if (eq name "State")}}100{{else if (eq name "Transition")}}150{{else}}120{{/if}};
+            const defaultHeight = {{#if (eq name "State")}}60{{else if (eq name "Transition")}}40{{else}}80{{/if}};
+            {{/if}}
+            
             node.bounds = {
                 x: schema.position?.x || 0,
                 y: schema.position?.y || 0,
-                width: schema.size?.width || {{#if (eq name "State")}}100{{else if (eq name "Transition")}}150{{else}}120{{/if}},
-                height: schema.size?.height || {{#if (eq name "State")}}60{{else if (eq name "Transition")}}40{{else}}80{{/if}}
+                width: schema.size?.width || defaultWidth,
+                height: schema.size?.height || defaultHeight
             };
         }
         
@@ -41,6 +49,19 @@ export class {{toPascalCase projectName}}ModelFactory extends SModelFactory {
             (node as any).{{name}} = schema.{{name}};
         }
         {{/each}}
+        
+        {{#if metadata}}
+        // Apply metadata-driven properties
+        {{#if metadata.deletable}}
+        (node as any).deletable = {{metadata.deletable}};
+        {{/if}}
+        {{#if metadata.resizable}}
+        (node as any).resizable = {{metadata.resizable}};
+        {{/if}}
+        {{#if metadata.connectable}}
+        (node as any).connectable = {{metadata.connectable}};
+        {{/if}}
+        {{/if}}
     }
     {{/each}}
 }

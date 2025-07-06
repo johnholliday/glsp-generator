@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { DiagramConfiguration, ShapeTypeHint, EdgeTypeHint } from '@eclipse-glsp/server';
+import { DiagramConfiguration, ShapeTypeHint, EdgeTypeHint, ServerLayoutKind, GModelElementConstructor } from '@eclipse-glsp/server';
 
 /**
  * Diagram configuration for {{projectName}}
@@ -8,6 +8,23 @@ import { DiagramConfiguration, ShapeTypeHint, EdgeTypeHint } from '@eclipse-glsp
 export class {{toPascalCase projectName}}DiagramConfiguration implements DiagramConfiguration {
     get diagramType(): string {
         return '{{projectName}}-diagram';
+    }
+
+    get layoutKind(): ServerLayoutKind {
+        return ServerLayoutKind.MANUAL;
+    }
+
+    get needsClientLayout(): boolean {
+        return true;
+    }
+
+    get animatedUpdate(): boolean {
+        return true;
+    }
+
+    get typeMapping(): Map<string, GModelElementConstructor> {
+        // Return empty map - actual type mapping is handled by the model factory
+        return new Map<string, GModelElementConstructor>();
     }
 
     get shapeTypeHints(): ShapeTypeHint[] {

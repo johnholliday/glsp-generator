@@ -12,9 +12,12 @@ src/__tests__/temp-output/
 coverage/
 sandbox/
 .vitest-ui.pid
+test-output/
+
+# Generated output from VSCode context menu
+generated/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

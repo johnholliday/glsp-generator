@@ -1,4 +1,4 @@
-import { createMockGLSPGenerator } from '../../test/helpers/glsp-generator-helper';
+import { createMockGLSPGenerator } from './helpers/glsp-generator-helper';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs-extra';

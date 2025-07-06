@@ -102,6 +102,11 @@ export class TemplateLoader {
             return options.inverse(this);
         });
 
+        // Helper for JSON stringification
+        this.handlebars.registerHelper('json', (context: any) => {
+            return new Handlebars.SafeString(JSON.stringify(context, null, 2));
+        });
+
         // Helper for formatting dates
         this.handlebars.registerHelper('formatDate', (dateString: string) => {
             if (!dateString) return '';

@@ -1,7 +1,7 @@
 import { Container } from 'inversify';
 import { configureViewerOptions, ConsoleLogger, LogLevel, TYPES, ModelViewer } from 'sprotty';
-import { createClientContainer, BaseGLSPClientContribution } from '@eclipse-glsp/client';
-import { {{projectName}}DiagramModule } from '../browser/diagram/{{projectName}}-diagram-module.js';
+import { initializeDiagramContainer } from '@eclipse-glsp/client';
+import { {{projectName}}DiagramModule } from '../browser/diagram/{{projectName}}-diagram-module';
 
 // VS Code API
 declare const acquireVsCodeApi: () => any;
@@ -12,7 +12,8 @@ const vscode = acquireVsCodeApi();
  */
 async function initializeDiagram(): Promise<void> {
     // Create the GLSP container
-    const container = createClientContainer({{projectName}}DiagramModule);
+    const container = new Container();
+    container.load({{projectName}}DiagramModule);
     
     // Configure viewer options
     configureViewerOptions(container, {
@@ -46,7 +47,7 @@ async function initializeDiagram(): Promise<void> {
         setupMessageHandling(modelViewer);
         
         // Notify extension that diagram is ready
-        vscode.postMessage({ command: 'diagramReady' });
+        vscode.postMessage({ command: 'ready' });
         
     } catch (error) {
         console.error('Failed to initialize diagram:', error);
@@ -67,7 +68,7 @@ function parseDocumentContent(content: string): any {
     const model = {
         id: 'graph',
         type: 'graph',
-        children: []
+        children: [] as any[]
     };
     
     try {

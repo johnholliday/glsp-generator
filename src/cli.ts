@@ -190,6 +190,47 @@ class CLI {
         initial: './output'
       },
       {
+        type: 'select',
+        name: 'metadataSource',
+        message: 'How would you like to configure GLSP metadata?',
+        choices: [
+          { title: 'From grammar annotations (recommended)', value: 'annotations' },
+          { title: 'Use attribute group (legacy)', value: 'group' },
+          { title: 'External config file', value: 'config' },
+          { title: 'Default configuration', value: 'default' }
+        ]
+      },
+      {
+        type: prev => prev === 'group' ? 'select' : null,
+        name: 'attributeGroup',
+        message: 'Select attribute group:',
+        choices: [
+          { title: 'Workflow - Process and state diagrams', value: 'workflow' },
+          { title: 'Dataflow - Data processing pipelines', value: 'dataflow' },
+          { title: 'Architecture - System architecture diagrams', value: 'architecture' },
+          { title: 'Hierarchy - Tree and organizational charts', value: 'hierarchy' },
+          { title: 'Mathematical - Graph and network diagrams', value: 'mathematical' },
+          { title: 'Minimal - Basic diagram support', value: 'minimal' }
+        ]
+      },
+      {
+        type: prev => prev === 'config' ? 'text' : null,
+        name: 'metadataConfig',
+        message: 'Path to metadata config file:',
+        initial: './glsp-metadata.json'
+      },
+      {
+        type: 'select',
+        name: 'mode',
+        message: 'Generation mode:',
+        choices: [
+          { title: 'Generate VSIX package (default)', value: 'vsix' },
+          { title: 'Development mode (open in VSCode)', value: 'dev' },
+          { title: 'Debug mode (open extension host)', value: 'debug' },
+          { title: 'Project only (no VSIX)', value: 'project' }
+        ]
+      },
+      {
         type: 'confirm',
         name: 'watch',
         message: 'Watch for changes?',
@@ -200,6 +241,15 @@ class CLI {
     if (!inputs.grammar) return [];
 
     const args = ['generate', inputs.grammar, inputs.output];
+    if (inputs.metadataSource === 'group' && inputs.attributeGroup) {
+      args.push(`--${inputs.attributeGroup}`);
+    }
+    if (inputs.metadataSource === 'config' && inputs.metadataConfig) {
+      args.push('--metadata-config', inputs.metadataConfig);
+    }
+    if (inputs.mode === 'dev') args.push('--dev');
+    if (inputs.mode === 'debug') args.push('--debug');
+    if (inputs.mode === 'project') args.push('--no-vsix');
     if (inputs.watch) args.push('--watch');
     return args;
   }

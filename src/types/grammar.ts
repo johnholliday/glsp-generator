@@ -2,6 +2,8 @@
  * Grammar type definitions for the GLSP generator
  */
 
+import { ElementMetadata, GLSPMetadataConfig } from '../metadata/config-types.js';
+
 export interface GrammarProperty {
   name: string;
   type: string;
@@ -14,18 +16,22 @@ export interface GrammarInterface {
   name: string;
   properties: GrammarProperty[];
   superTypes: string[];
+  metadata?: ElementMetadata;
 }
 
 export interface GrammarType {
   name: string;
   definition: string;
   unionTypes?: string[];
+  metadata?: ElementMetadata;
 }
 
 export interface ParsedGrammar {
   interfaces: GrammarInterface[];
   types: GrammarType[];
   projectName: string;
+  metadata?: GLSPMetadataConfig;
+  grammarAST?: any; // Native Langium Grammar object for metadata extraction
 }
 
 export interface GenerationContext {

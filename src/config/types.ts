@@ -76,6 +76,10 @@ export interface GLSPConfig {
     styling: StylingConfig;
     generation: GenerationConfig;
     linter?: LinterConfig;
+    metadata?: {
+        group?: string;
+        [key: string]: any;
+    };
 }
 
 export interface LinterConfig {

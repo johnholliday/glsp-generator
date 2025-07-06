@@ -22,6 +22,35 @@ export class {{toPascalCase projectName}}DiagramConfiguration extends GLSPDiagra
     
     private configureDiagramOptions(container: Container): void {
         const options = {
+            {{#if grammar.metadata}}
+            {{#if grammar.metadata.config.glsp.gridEnabled}}
+            snapToGrid: true,
+            {{else if config.diagram.features.snapToGrid}}
+            snapToGrid: true,
+            {{/if}}
+            {{#if grammar.metadata.config.glsp.animationEnabled}}
+            animationEnabled: true,
+            {{else if config.diagram.features.animation}}
+            animationEnabled: true,
+            {{/if}}
+            routingType: '{{#if grammar.metadata.grammar.features.routing}}{{grammar.metadata.grammar.features.routing}}{{else}}{{config.diagram.features.routing}}{{/if}}',
+            defaultNodeSize: {
+                width: {{#if grammar.metadata.config.styling.spacing}}120{{else}}{{config.styling.nodeDefaults.width}}{{/if}},
+                height: {{#if grammar.metadata.config.styling.spacing}}80{{else}}{{config.styling.nodeDefaults.height}}{{/if}}
+            },
+            theme: {
+                primary: '{{#if grammar.metadata.grammar.theme.primary}}{{grammar.metadata.grammar.theme.primary}}{{else}}{{config.styling.defaultColors.node}}{{/if}}',
+                secondary: '{{#if grammar.metadata.grammar.theme.secondary}}{{grammar.metadata.grammar.theme.secondary}}{{else}}{{config.styling.defaultColors.edge}}{{/if}}',
+                background: '{{#if grammar.metadata.grammar.theme.background}}{{grammar.metadata.grammar.theme.background}}{{else}}#f8fafc{{/if}}',
+                surface: '{{#if grammar.metadata.grammar.theme.surface}}{{grammar.metadata.grammar.theme.surface}}{{else}}#ffffff{{/if}}'
+            },
+            defaultColors: {
+                node: '{{#if grammar.metadata.config.styling.colors.node.fill}}{{grammar.metadata.config.styling.colors.node.fill}}{{else}}{{config.styling.defaultColors.node}}{{/if}}',
+                edge: '{{#if grammar.metadata.config.styling.colors.edge.stroke}}{{grammar.metadata.config.styling.colors.edge.stroke}}{{else}}{{config.styling.defaultColors.edge}}{{/if}}',
+                selected: '{{#if grammar.metadata.config.styling.colors.selection.primary}}{{grammar.metadata.config.styling.colors.selection.primary}}{{else}}{{config.styling.defaultColors.selected}}{{/if}}',
+                hover: '{{#if grammar.metadata.config.styling.colors.selection.secondary}}{{grammar.metadata.config.styling.colors.selection.secondary}}{{else}}{{config.styling.defaultColors.hover}}{{/if}}'
+            }
+            {{else}}
             {{#if config.diagram.features.snapToGrid}}
             snapToGrid: true,
             {{/if}}
@@ -40,6 +69,7 @@ export class {{toPascalCase projectName}}DiagramConfiguration extends GLSPDiagra
                 selected: '{{config.styling.defaultColors.selected}}',
                 hover: '{{config.styling.defaultColors.hover}}'
             }
+            {{/if}}
         };
         
         container.bind('DiagramOptions').toConstantValue(options);
@@ -61,7 +91,15 @@ export class {{toPascalCase projectName}}DiagramConfiguration extends GLSPDiagra
         // Configure auto layout
         container.bind('AutoLayoutOptions').toConstantValue({
             enabled: true,
-            algorithm: 'layered'
+            algorithm: '{{#if grammar.metadata.grammar.layout.algorithm}}{{grammar.metadata.grammar.layout.algorithm}}{{else}}layered{{/if}}',
+            {{#if grammar.metadata.grammar.layout}}
+            direction: '{{#if grammar.metadata.grammar.layout.direction}}{{grammar.metadata.grammar.layout.direction}}{{else}}TB{{/if}}',
+            spacing: {
+                nodeSpacing: {{#if grammar.metadata.grammar.layout.spacing.nodeSpacing}}{{grammar.metadata.grammar.layout.spacing.nodeSpacing}}{{else}}50{{/if}},
+                rankSpacing: {{#if grammar.metadata.grammar.layout.spacing.rankSpacing}}{{grammar.metadata.grammar.layout.spacing.rankSpacing}}{{else}}80{{/if}},
+                componentSpacing: {{#if grammar.metadata.grammar.layout.spacing.componentSpacing}}{{grammar.metadata.grammar.layout.spacing.componentSpacing}}{{else}}100{{/if}}
+            }
+            {{/if}}
         });
     }
     {{/if}}

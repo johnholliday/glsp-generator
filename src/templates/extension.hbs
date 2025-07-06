@@ -137,6 +137,8 @@ class {{toPascalCase projectName}}DiagramProvider implements vscode.CustomTextEd
         </head>
         <body>
             <div id="sprotty-container"></div>
+            <div id="sprotty-hidden" style="display: none;"></div>
+            <div id="sprotty-popup" style="position: absolute; display: none;"></div>
             <script>
                 window.documentUri = '${document.uri.toString()}';
                 window.initialContent = ${JSON.stringify(document.getText())};

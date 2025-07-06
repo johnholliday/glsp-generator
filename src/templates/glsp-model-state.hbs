@@ -1,24 +1,23 @@
 import { injectable } from 'inversify';
-import { GModelElement, GModelRoot, ModelState } from '@eclipse-glsp/server';
+import { GModelElement, GModelRoot, DefaultModelState } from '@eclipse-glsp/server';
 
 /**
  * Model state management for {{projectName}} diagrams
  */
 @injectable()
-export class {{toPascalCase projectName}}ModelState extends ModelState {
-    protected sourceUri?: string;
-    protected modelRoot?: GModelRoot;
+export class {{toPascalCase projectName}}ModelState extends DefaultModelState {
+    protected _modelRoot?: GModelRoot;
     protected modelIndex = new Map<string, GModelElement>();
 
     get root(): GModelRoot {
-        if (!this.modelRoot) {
+        if (!this._modelRoot) {
             throw new Error('Model root not initialized');
         }
-        return this.modelRoot;
+        return this._modelRoot;
     }
 
     updateRoot(newRoot: GModelRoot): void {
-        this.modelRoot = newRoot;
+        this._modelRoot = newRoot;
         this.modelIndex.clear();
         this.indexElement(newRoot);
     }
@@ -32,13 +31,6 @@ export class {{toPascalCase projectName}}ModelState extends ModelState {
         }
     }
 
-    setSourceUri(uri: string): void {
-        this.sourceUri = uri;
-    }
-
-    getSourceUri(): string | undefined {
-        return this.sourceUri;
-    }
 
     {{#each interfaces}}
     /**

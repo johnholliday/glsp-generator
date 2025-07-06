@@ -10,6 +10,8 @@ import { ConfigLoader } from '../config/config-loader.js';
 import { ConfigInterpolator } from '../config/config-interpolator.js';
 import { LangiumGrammarParser } from '../utils/langium-parser.js';
 import { getUserProjectRoot } from '../utils/paths.js';
+import { TempDirectoryManager } from '../utils/temp-directory.js';
+import { VsixPackager } from '../utils/vsix-packager.js';
 import ora from 'ora';
 
 interface GenerateArgs {
@@ -46,6 +48,18 @@ interface GenerateArgs {
   'ci-publish-npm'?: boolean;
   'ci-publish-ovsx'?: boolean;
   'ci-docker'?: boolean;
+  // Metadata-driven generation options
+  workflow?: boolean;
+  dataflow?: boolean;
+  architecture?: boolean;
+  hierarchy?: boolean;
+  mathematical?: boolean;
+  minimal?: boolean;
+  'glsp-config'?: string;
+  'validate-metadata'?: boolean;
+  'metadata-config'?: string;
+  'dev'?: boolean;
+  'no-vsix'?: boolean;
 }
 
 @injectable()
@@ -57,6 +71,8 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
   private readonly interactive: InteractiveHelper;
   private parser: LangiumGrammarParser;
   private configLoader: ConfigLoader;
+  private tempDirManager: TempDirectoryManager;
+  private vsixPackager: VsixPackager;
 
   constructor(
     @inject(TYPES.Logger) logger: ILogger,
@@ -67,6 +83,8 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
     this.interactive = new InteractiveHelper(logger);
     this.parser = new LangiumGrammarParser();
     this.configLoader = new ConfigLoader();
+    this.tempDirManager = new TempDirectoryManager(logger);
+    this.vsixPackager = new VsixPackager(logger);
   }
 
   builder(yargs: Argv): Argv<GenerateArgs> {
@@ -107,12 +125,6 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
         type: 'boolean',
         default: false,
         deprecated: true
-      })
-      .option('debug', {
-        alias: 'd',
-        describe: 'Enable debug output',
-        type: 'boolean',
-        default: false
       })
       .option('validate-only', {
         describe: 'Only validate, don\'t generate',
@@ -248,14 +260,88 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
         type: 'boolean',
         default: true
       })
+      // Metadata-driven generation options
+      .option('workflow', {
+        describe: 'Use workflow attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('dataflow', {
+        describe: 'Use dataflow attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('architecture', {
+        describe: 'Use architecture attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('hierarchy', {
+        describe: 'Use hierarchy attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('mathematical', {
+        describe: 'Use mathematical attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('minimal', {
+        describe: 'Use minimal attribute group (legacy)',
+        type: 'boolean',
+        default: false
+      })
+      .option('glsp-config', {
+        describe: 'Path to GLSP metadata configuration file',
+        type: 'string'
+      })
+      .option('validate-metadata', {
+        describe: 'Validate grammar metadata annotations',
+        type: 'boolean',
+        default: true
+      })
+      .option('metadata-config', {
+        describe: 'External metadata configuration file (JSON/YAML)',
+        type: 'string'
+      })
+      .option('dev', {
+        describe: 'Development mode - generate project and open in VSCode',
+        type: 'boolean',
+        default: false
+      })
+      .option('debug', {
+        alias: 'd',
+        describe: 'Debug mode - open VSCode extension host with generated VSIX',
+        type: 'boolean',
+        default: false
+      })
+      .option('no-vsix', {
+        describe: 'Skip VSIX packaging (generate project only)',
+        type: 'boolean',
+        default: false
+      })
       .example('$0 gen state-machine.langium', 'Generate with default output')
       .example('$0 gen grammar.langium ./my-extension', 'Custom output directory')
       .example('$0 gen grammar.langium --tests', 'Generate with test infrastructure')
       .example('$0 gen grammar.langium --ci', 'Generate with CI/CD configuration')
+      .example('$0 gen workflow.langium --workflow', 'Use workflow attribute group (legacy)')
+      .example('$0 gen annotated.langium', 'Use metadata from grammar annotations')
+      .example('$0 gen grammar.langium --metadata-config glsp.json', 'Use external metadata config')
+      .example('$0 gen grammar.langium --dev', 'Generate project and open in VSCode for development')
+      .example('$0 gen grammar.langium --debug', 'Generate VSIX and open in VSCode extension host')
+      .example('$0 gen grammar.langium --no-vsix', 'Generate project only, skip VSIX packaging')
       .check((argv) => {
         if (argv.grammar && !argv.grammar.endsWith('.langium')) {
           this.logger.warn('File does not have .langium extension', { file: argv.grammar });
         }
+        
+        // Check for conflicting attribute groups
+        const attributeGroups = ['workflow', 'dataflow', 'architecture', 'hierarchy', 'mathematical', 'minimal'];
+        const selectedGroups = attributeGroups.filter(group => argv[group]);
+        if (selectedGroups.length > 1) {
+          throw new Error(`Cannot use multiple attribute groups: ${selectedGroups.join(', ')}`);
+        }
+        
         return true;
       }) as Argv<GenerateArgs>;
   }
@@ -276,7 +362,7 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
       const interpolationContext = await this.getInterpolationContext(grammarPath);
 
       // Load configuration
-      await this.loadConfiguration(args.config, interpolationContext, args.set);
+      await this.loadConfiguration(args.config, interpolationContext, args.set, args);
 
       // Validate grammar
       if (!args['no-validate']) {
@@ -290,16 +376,56 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
 
       // Check output directory
       const outputPath = path.resolve(args.output || './output');
-      await this.checkOutputDirectory(outputPath, args.force);
+      
+      // Handle different generation modes
+      if (args.dev) {
+        // Development mode: generate to output directory and open in VSCode
+        await this.checkOutputDirectory(outputPath, args.force);
+        await this.generateExtension(grammarPath, outputPath, args);
+        await this.vsixPackager.openProjectInVSCode(outputPath);
+        this.logger.info('Opened project in VSCode for development');
+      } else if (args['no-vsix']) {
+        // Generate project only
+        await this.checkOutputDirectory(outputPath, args.force);
+        await this.generateExtension(grammarPath, outputPath, args);
+        this.showNextSteps(outputPath);
+      } else {
+        // Default: generate VSIX package
+        const tempDir = await this.tempDirManager.createTempDirectory('glsp-gen-');
+        try {
+          // Generate to temp directory
+          await this.generateExtension(grammarPath, tempDir.path, args);
+          
+          // Package as VSIX
+          const packageResult = await this.vsixPackager.packageExtension({
+            projectPath: tempDir.path,
+            outputPath,
+            logger: this.logger
+          });
 
-      // Generate extension
-      await this.generateExtension(grammarPath, outputPath, args);
+          if (!packageResult.success) {
+            throw new Error(`Failed to package VSIX: ${packageResult.error?.message}`);
+          }
+
+          this.logger.info('Generated VSIX package', { path: packageResult.vsixPath });
+
+          // Handle debug mode
+          if (args.debug) {
+            await this.vsixPackager.openInVSCode(packageResult.vsixPath, true);
+            this.logger.info('Opened VSIX in VSCode extension host');
+          } else {
+            this.logger.info('VSIX package ready for installation:');
+            this.logger.info(`  code --install-extension ${packageResult.vsixPath}`);
+          }
+        } finally {
+          await tempDir.cleanup();
+        }
+      }
 
       // Handle watch mode
       if (args.watch) {
         await this.startWatchMode(grammarPath, outputPath, args);
       } else {
-        this.showNextSteps(outputPath);
         setTimeout(() => process.exit(0), 100);
       }
 
@@ -337,13 +463,29 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
   private async loadConfiguration(
     configPath?: string,
     interpolationContext?: any,
-    overrides?: Record<string, any>
+    overrides?: Record<string, any>,
+    args?: GenerateArgs
   ): Promise<any> {
     let config = await this.configLoader.loadConfig(
       getUserProjectRoot(),
       configPath,
       interpolationContext
     );
+
+    // Apply legacy attribute group if specified
+    if (args) {
+      const attributeGroups = ['workflow', 'dataflow', 'architecture', 'hierarchy', 'mathematical', 'minimal'];
+      const selectedGroup = attributeGroups.find(group => args[group as keyof GenerateArgs]);
+      
+      if (selectedGroup) {
+        config = {
+          ...config,
+          metadata: {
+            attributeGroup: selectedGroup
+          }
+        };
+      }
+    }
 
     if (overrides) {
       config = this.configLoader.applyOverrides(config, overrides);
@@ -390,6 +532,10 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
     args: GenerateArgs
   ): Promise<string> {
     const generateSpinner = ora('Generating GLSP extension...').start();
+
+    // Determine selected attribute group
+    const attributeGroups = ['workflow', 'dataflow', 'architecture', 'hierarchy', 'mathematical', 'minimal'];
+    const selectedGroup = attributeGroups.find(group => args[group as keyof GenerateArgs]);
 
     const { extensionDir } = await this.generator.generateExtension(grammarPath, outputPath, {
       generateDocs: args.docs,
@@ -440,6 +586,13 @@ export class GenerateCommand extends BaseCommand<GenerateArgs> {
         templatesPath: args['templates-path'],
         templatesPackage: args['templates-package'],
         templatesRepo: args['templates-repo']
+      },
+      // Metadata-driven generation options
+      metadataOptions: {
+        attributeGroup: selectedGroup as any,
+        glspConfigPath: args['glsp-config'],
+        validateMetadata: args['validate-metadata'],
+        metadataConfigPath: args['metadata-config']
       }
     });
 

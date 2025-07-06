@@ -51,7 +51,13 @@
       "Bash(yarn config:*)",
       "WebFetch(domain:github.com)",
       "Bash(yarn tsc:*)",
-      "Bash(yarn integration:*)"
+      "Bash(yarn integration:*)",
+      "Bash(npx vsce package:*)",
+      "Bash(vsce package:*)",
+      "Bash(npx vsce:*)",
+      "Bash(npm ls:*)",
+      "Bash(./scripts/run-extension.sh:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

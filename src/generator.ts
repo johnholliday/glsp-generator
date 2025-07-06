@@ -19,6 +19,7 @@ import { CICDGenerator, CICDGeneratorOptions } from './cicd/index.js';
 import { TemplateSystem, TemplateResolver, TemplateOptions } from './templates/index.js';
 import { PerformanceOptimizer, PerformanceConfig } from './performance/index.js';
 import { parseGrammarToAST } from './performance/grammar-converter.js';
+import { VSIXMetadataExtractor } from './metadata/vsix-metadata-extractor.js';
 
 export class GLSPGenerator {
   private parser: IGrammarParser;
@@ -87,6 +88,12 @@ export class GLSPGenerator {
       cicdOptions?: CICDGeneratorOptions;
       templateOptions?: TemplateOptions;
       performanceOptions?: PerformanceConfig;
+      metadataOptions?: {
+        attributeGroup?: string;
+        glspConfigPath?: string;
+        validateMetadata?: boolean;
+        metadataConfigPath?: string;
+      };
     }
   ): Promise<{ extensionDir: string }> {
     // Start performance monitoring
@@ -162,6 +169,30 @@ export class GLSPGenerator {
         types: grammar.types
       } : grammar;
 
+      // Extract VSIX metadata from grammar file
+      console.log(chalk.blue('📋 Extracting VSIX metadata...'));
+      // Try to find default logo in multiple locations
+      let defaultLogoPath = path.join(path.dirname(grammarFile), 'docugenix.png');
+      if (!await fs.pathExists(defaultLogoPath)) {
+        // Use the one from our source directory
+        defaultLogoPath = path.join(getTemplatesDir(), '..', 'docugenix.png');
+      }
+      const vsixMetadata = await VSIXMetadataExtractor.extractFromGrammar(
+        grammarFile,
+        parsedGrammar,
+        defaultLogoPath
+      );
+
+      // Update config with VSIX metadata
+      this.config.extension = {
+        ...this.config.extension,
+        ...VSIXMetadataExtractor.toPackageJson(
+          vsixMetadata,
+          parsedGrammar.projectName,
+          this.config.extension.fileExtension || parsedGrammar.projectName
+        )
+      };
+
       const context: GenerationContext = {
         projectName: parsedGrammar.projectName,
         grammar: parsedGrammar,
@@ -188,6 +219,13 @@ export class GLSPGenerator {
       progress.startPhase('Generation');
       console.log(chalk.blue('⚡ Generating files...'));
       await this.generateFiles(context, extensionDir, shouldOptimize);
+
+      // Copy icon file if present
+      if (vsixMetadata.icon) {
+        console.log(chalk.blue('🎨 Copying extension icon...'));
+        await VSIXMetadataExtractor.copyIcon(vsixMetadata.icon, extensionDir);
+      }
+
       progress.completePhase(`Generated files in ${extensionDir}`);
 
       // Phase 4: Additional Features
@@ -492,6 +530,17 @@ export class GLSPGenerator {
       } else {
         return str + 's';
       }
+    });
+
+    // Helper for checking if string includes substring
+    Handlebars.registerHelper('includes', (str: string, substring: string) => {
+      if (!str || !substring) return false;
+      return str.includes(substring);
+    });
+
+    // Helper for JSON stringification
+    Handlebars.registerHelper('json', (context: any) => {
+      return JSON.stringify(context, null, 2);
     });
   }
 

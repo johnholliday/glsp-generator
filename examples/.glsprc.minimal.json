@@ -1,8 +1,0 @@
-{
-  "$schema": "../src/config/glsprc.schema.json",
-  "extension": {
-    "name": "my-dsl-glsp",
-    "displayName": "My DSL Extension",
-    "version": "0.1.0"
-  }
-}

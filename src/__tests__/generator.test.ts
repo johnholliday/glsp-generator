@@ -1,4 +1,4 @@
-import { createMockGLSPGenerator } from '../../test/helpers/glsp-generator-helper';
+import { createMockGLSPGenerator } from './helpers/glsp-generator-helper';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import fs from 'fs-extra';
@@ -44,7 +44,7 @@ const testDir = path.join(process.cwd(), 'src', '__tests__');
 
 describe('GLSPGenerator', () => {
   let generator: GLSPGenerator;
-  const testGrammarPath = path.join(testDir, 'fixtures', 'test-grammar.langium');
+  const testGrammarPath = path.join(process.cwd(), 'src', '__tests__', 'fixtures', 'grammars', 'integration', 'test-grammar.langium');
   const tempOutputDir = path.join(testDir, 'temp-output');
 
   beforeEach(async () => {

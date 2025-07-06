@@ -100,12 +100,19 @@ glsp-generator/
 │   └── index.ts               # Library exports
 ├── dist/                       # Compiled output (git-ignored)
 ├── test/                       # Comprehensive test suite
+│   ├── grammars/              # All test grammar files
+│   │   ├── basic/            # Simple grammar examples
+│   │   ├── advanced/         # Complex real-world grammars
+│   │   ├── features/         # Feature-specific test grammars
+│   │   ├── edge-cases/       # Edge case and error testing
+│   │   └── integration/      # Integration test grammars
 │   ├── unit/                  # Unit tests
 │   ├── integration/           # Integration tests
 │   ├── fixtures/              # Test data and fixtures
 │   ├── mocks/                 # Mock implementations
 │   ├── helpers/               # Test helper utilities
 │   └── utils/                 # Test framework utilities
+├── generated/                  # Generated output from context menu (git-ignored)
 ├── docs/                       # Documentation
 │   ├── architecture/          # C4 diagrams and architecture docs
 │   ├── MIGRATION_GUIDE.md     # v1 to v2 migration guide
@@ -120,6 +127,11 @@ glsp-generator/
 │   ├── browser/               # Client-side templates
 │   ├── common/                # Shared templates
 │   └── server/                # Server-side templates
+├── .vscode/                    # VSCode workspace settings
+│   ├── extensions.json        # Recommended extensions
+│   ├── tasks.json            # Build tasks for .langium files
+│   ├── keybindings.json      # Keyboard shortcuts
+│   └── glsp-generator-menus/ # Context menu extension
 ├── package.json
 ├── tsconfig.json
 ├── vitest.config.ts           # Vitest configuration
@@ -182,11 +194,20 @@ yarn test:ui
 
 ### CLI Usage
 ```powershell
-# Generate a GLSP extension from a Langium grammar
+# Generate a VSIX package from a Langium grammar (default behavior)
 node dist/cli.js generate <grammar-file> -o <output-dir>
 
-# Example with real file (PowerShell paths)
-node dist/cli.js generate .\examples\statemachine.langium -o .\output\statemachine-glsp
+# Example with real file (PowerShell paths) - generates .vsix file
+node dist/cli.js generate .\examples\statemachine.langium -o .\output
+
+# Development mode - generate project and open in VSCode
+node dist/cli.js generate <grammar-file> -o <output-dir> --dev
+
+# Debug mode - generate VSIX and open in VSCode extension host
+node dist/cli.js generate <grammar-file> -o <output-dir> --debug
+
+# Generate project only (no VSIX packaging)
+node dist/cli.js generate <grammar-file> -o <output-dir> --no-vsix
 
 # Validate a grammar file
 node dist/cli.js validate <grammar-file>
@@ -748,15 +769,33 @@ node --inspect dist/cli.js generate <grammar-file>
 ```
 
 ## Extension Development Workflow
+
+### Using VSCode Context Menus (Recommended)
+1. Right-click any `.langium` file in VSCode
+2. Select generation mode:
+   - **Generate GLSP Extension (VSIX)** - Creates installable VSIX package
+   - **Generate GLSP Extension (Dev Mode)** - Opens project in new VSCode window
+   - **Generate GLSP Extension (Debug)** - Opens in extension development host
+   - **Generate GLSP Extension (Project Only)** - Generates project without VSIX
+3. Output goes to `./generated/<grammar-name>/`
+
+### Using Command Line
 1. Define your language in a `.langium` file
 2. Validate the grammar: `node dist/cli.js validate my-language.langium`
-3. Generate the extension: `node dist/cli.js generate my-language.langium -o .\my-extension`
-4. Navigate to output: `cd my-extension`
-5. Install dependencies: `yarn install` (uses Yarn 1.22)
-6. Build the extension: `yarn build`
-7. Test in Theia: `yarn theia start`
+3. Generate VSIX (default): `node dist/cli.js generate my-language.langium`
+4. Or generate with options:
+   - Development mode: `node dist/cli.js generate my-language.langium --dev`
+   - Debug mode: `node dist/cli.js generate my-language.langium --debug`
+   - Project only: `node dist/cli.js generate my-language.langium --no-vsix`
 
-**Note**: All commands above work in PowerShell. Use backslashes for Windows paths or forward slashes (both work).
+### Manual Development
+1. Generate project: `node dist/cli.js generate my-language.langium --no-vsix`
+2. Navigate to output: `cd generated/my-language`
+3. Install dependencies: `yarn install` (uses Yarn 1.22)
+4. Build the extension: `yarn build`
+5. Test in Theia: `yarn theia start`
+
+**Note**: All commands work in PowerShell. Use backslashes for Windows paths or forward slashes (both work).
 
 ## API Reference (v2)
 

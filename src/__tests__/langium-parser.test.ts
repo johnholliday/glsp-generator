@@ -7,7 +7,7 @@ const testDir = path.join(process.cwd(), 'src', '__tests__');
 
 describe('LangiumGrammarParser', () => {
   let parser: IGrammarParser;
-  const testGrammarPath = path.join(testDir, 'fixtures', 'test-grammar.langium');
+  const testGrammarPath = path.join(process.cwd(), 'test', 'grammars', 'integration', 'test-grammar.langium');
 
   beforeEach(() => {
     // Use mock parser for testing

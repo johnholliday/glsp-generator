@@ -6,6 +6,7 @@ import {
 import { createLangiumGrammarServices, LangiumGrammarServices } from 'langium/grammar';
 import fs from 'fs-extra';
 import { ParsedGrammar, GrammarInterface, GrammarProperty, GrammarType } from '../types/grammar.js';
+import { LangiumMetadataParser } from '../metadata/parser.js';
 import path from 'path';
 
 /**
@@ -13,10 +14,12 @@ import path from 'path';
  */
 export class LangiumGrammarParser {
     private services: LangiumGrammarServices;
+    private metadataParser: LangiumMetadataParser;
 
     constructor() {
         // Create Langium grammar services
         this.services = createLangiumGrammarServices(EmptyFileSystem).grammar;
+        this.metadataParser = new LangiumMetadataParser();
     }
 
     async parseGrammarFile(grammarPath: string): Promise<ParsedGrammar> {
@@ -41,6 +44,9 @@ export class LangiumGrammarParser {
             throw new Error('Failed to parse grammar: no parse result');
         }
 
+        // Extract metadata from the grammar
+        const metadata = this.metadataParser.extractMetadata(grammar);
+
         // Extract interfaces and types from the parsed AST
         const interfaces: GrammarInterface[] = [];
         const types: GrammarType[] = [];
@@ -51,11 +57,15 @@ export class LangiumGrammarParser {
                 if (rule.$type === 'ParserRule' && !rule.fragment) {
                     // Parser rules create types implicitly
                     const properties = this.extractPropertiesFromRule(rule);
-                    if (properties.length > 0) {
+                    const elementMetadata = metadata.elements.get(rule.name);
+                    
+                    // Create interface even if no properties, if metadata exists
+                    if (properties.length > 0 || elementMetadata) {
                         interfaces.push({
                             name: rule.name,
                             properties,
-                            superTypes: []
+                            superTypes: [],
+                            metadata: elementMetadata
                         });
                     }
                 }
@@ -65,21 +75,33 @@ export class LangiumGrammarParser {
         // Also check for explicit interface declarations
         if (grammar.interfaces) {
             for (const iface of grammar.interfaces) {
-                interfaces.push(this.extractInterface(iface as any));
+                const interfaceObj = this.extractInterface(iface as any);
+                const elementMetadata = metadata.elements.get(interfaceObj.name);
+                interfaces.push({
+                    ...interfaceObj,
+                    metadata: elementMetadata
+                });
             }
         }
 
         // Extract explicit type declarations
         if (grammar.types) {
             for (const type of grammar.types) {
-                types.push(this.extractType(type as any));
+                const typeObj = this.extractType(type as any);
+                const elementMetadata = metadata.elements.get(typeObj.name);
+                types.push({
+                    ...typeObj,
+                    metadata: elementMetadata
+                });
             }
         }
 
         return {
             interfaces,
             types,
-            projectName
+            projectName,
+            metadata,
+            grammarAST: grammar
         };
     }
 

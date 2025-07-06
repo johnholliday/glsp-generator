@@ -28,7 +28,7 @@ export namespace {{toPascalCase projectName}}Views {
                             markerUnits: 'strokeWidth'
                         }
                     }, [
-                        h('path', { attrs: { d: 'M0,0 L0,6 L9,3 z', fill: '#333' } })
+                        h('path', { attrs: { d: 'M0,0 L0,6 L9,3 z', fill: '{{#if grammar.metadata.config.styling.colors.edge.stroke}}{{grammar.metadata.config.styling.colors.edge.stroke}}{{else}}#64748b{{/if}}' } })
                     ])
                 ]),
                 h('g', { attrs: { transform } }, context.renderChildren(model))
@@ -50,10 +50,171 @@ export namespace {{toPascalCase projectName}}Views {
     export class {{name}}View extends ShapeView {
         render(node: SNode & {{name}}Node, context: RenderingContext): VNode {
             const { x, y } = node.position || { x: 0, y: 0 };
+            {{#if metadata}}
+            {{#if metadata.layoutOptions}}
+            const { width, height } = node.size || { 
+                width: {{#if metadata.layoutOptions.minWidth}}{{metadata.layoutOptions.minWidth}}{{else}}120{{/if}}, 
+                height: {{#if metadata.layoutOptions.minHeight}}{{metadata.layoutOptions.minHeight}}{{else}}80{{/if}} 
+            };
+            {{else}}
+            const { width, height } = node.size || { width: 120, height: 80 };
+            {{/if}}
+            {{else}}
             const { width, height } = node.size || { width: {{#if (eq name "State")}}100{{else if (eq name "Transition")}}150{{else}}120{{/if}}, height: {{#if (eq name "State")}}60{{else if (eq name "Transition")}}40{{else}}80{{/if}} };
+            {{/if}}
             
             const children: VNode[] = [];
             
+            {{#if metadata}}
+            {{#if (eq metadata.shape "circle")}}
+            // Circle shape
+            const radius = Math.min(width, height) / 2;
+            children.push(
+                h('circle', {
+                    attrs: {
+                        cx: width / 2,
+                        cy: height / 2,
+                        r: radius,
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                    }
+                })
+            );
+            {{else if (eq metadata.shape "diamond")}}
+            // Diamond shape
+            const points = `0,${height/2} ${width/2},0 ${width},${height/2} ${width/2},${height}`;
+            children.push(
+                h('polygon', {
+                    attrs: {
+                        points,
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                    }
+                })
+            );
+            {{else if (eq metadata.shape "hexagon")}}
+            // Hexagon shape
+            const cornerSize = width * 0.25;
+            const points = `${cornerSize},0 ${width-cornerSize},0 ${width},${height/2} ${width-cornerSize},${height} ${cornerSize},${height} 0,${height/2}`;
+            children.push(
+                h('polygon', {
+                    attrs: {
+                        points,
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                    }
+                })
+            );
+            {{else if (eq metadata.shape "ellipse")}}
+            // Ellipse shape
+            children.push(
+                h('ellipse', {
+                    attrs: {
+                        cx: width / 2,
+                        cy: height / 2,
+                        rx: width / 2,
+                        ry: height / 2,
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                    }
+                })
+            );
+            {{else if (eq metadata.shape "roundedRectangle")}}
+            // Rounded rectangle shape
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        rx: {{#if metadata.style.borderRadius}}{{metadata.style.borderRadius}}{{else}}8{{/if}},
+                        ry: {{#if metadata.style.borderRadius}}{{metadata.style.borderRadius}}{{else}}8{{/if}},
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                        {{#if metadata.style.strokeDasharray}},
+                        'stroke-dasharray': '{{metadata.style.strokeDasharray}}'
+                        {{/if}}
+                    }
+                })
+            );
+            {{else}}
+            // Rectangle shape (default)
+            children.push(
+                h('rect', {
+                    attrs: {
+                        x: 0, y: 0, width, height,
+                        {{#if metadata.style.borderRadius}}rx: {{metadata.style.borderRadius}}, ry: {{metadata.style.borderRadius}},{{/if}}
+                        fill: '{{#if metadata.style.fill}}{{metadata.style.fill}}{{else}}#2563eb{{/if}}',
+                        stroke: '{{#if metadata.style.stroke}}{{metadata.style.stroke}}{{else}}#1e40af{{/if}}',
+                        'stroke-width': {{#if metadata.style.strokeWidth}}{{metadata.style.strokeWidth}}{{else}}2{{/if}}
+                        {{#if metadata.style.strokeDasharray}},
+                        'stroke-dasharray': '{{metadata.style.strokeDasharray}}'
+                        {{/if}}
+                    }
+                })
+            );
+            {{/if}}
+            
+            // Label rendering based on metadata
+            {{#if metadata.label}}
+            const labelX = {{#if (eq metadata.label.position "left")}}12{{else if (eq metadata.label.position "right")}}width - 12{{else}}width / 2{{/if}};
+            const labelY = {{#if (eq metadata.label.position "top")}}12{{else if (eq metadata.label.position "bottom")}}height - 12{{else}}height / 2{{/if}};
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: labelX,
+                        y: labelY,
+                        'text-anchor': '{{#if (eq metadata.label.position "left")}}start{{else if (eq metadata.label.position "right")}}end{{else}}middle{{/if}}',
+                        'dominant-baseline': '{{#if (eq metadata.label.position "top")}}text-before-edge{{else if (eq metadata.label.position "bottom")}}text-after-edge{{else}}middle{{/if}}',
+                        fill: '{{#if metadata.label.style.fill}}{{metadata.label.style.fill}}{{else}}#ffffff{{/if}}',
+                        'font-family': '{{#if metadata.label.style.fontFamily}}{{metadata.label.style.fontFamily}}{{else}}Arial, sans-serif{{/if}}',
+                        'font-size': '{{#if metadata.label.style.fontSize}}{{metadata.label.style.fontSize}}{{else}}14{{/if}}',
+                        'font-weight': '{{#if metadata.label.style.fontWeight}}{{metadata.label.style.fontWeight}}{{else}}normal{{/if}}'
+                    }
+                }, String((node as any).name || (node as any).id || '{{name}}'))
+            );
+            {{else}}
+            // Default label
+            children.push(
+                h('text', {
+                    attrs: {
+                        x: width / 2, y: height / 2,
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        fill: '#ffffff',
+                        'font-family': 'Arial, sans-serif',
+                        'font-size': '14'
+                    }
+                }, String((node as any).name || (node as any).id || '{{name}}'))
+            );
+            {{/if}}
+            
+            {{#if metadata.ports}}
+            // Render ports
+            {{#each metadata.ports}}
+            const port{{@index}}X = {{#if (eq position "west")}}0{{else if (eq position "east")}}width{{else if (includes position "west")}}0{{else if (includes position "east")}}width{{else}}width / 2{{/if}};
+            const port{{@index}}Y = {{#if (eq position "north")}}0{{else if (eq position "south")}}height{{else if (includes position "north")}}0{{else if (includes position "south")}}height{{else}}height / 2{{/if}};
+            children.push(
+                h('circle', {
+                    attrs: {
+                        cx: port{{@index}}X,
+                        cy: port{{@index}}Y,
+                        r: 4,
+                        fill: '{{#if style.fill}}{{style.fill}}{{else}}#ffffff{{/if}}',
+                        stroke: '{{#if style.stroke}}{{style.stroke}}{{else}}#cbd5e1{{/if}}',
+                        'stroke-width': {{#if style.strokeWidth}}{{style.strokeWidth}}{{else}}1{{/if}},
+                        class: { port: true, '{{type}}-port': true }
+                    }
+                })
+            );
+            {{/each}}
+            {{/if}}
+            
+            {{else}}
+            // Fallback to hardcoded styles when no metadata
             {{#if (eq name "State")}}
             // State node - rounded rectangle
             children.push(
@@ -157,13 +318,20 @@ export namespace {{toPascalCase projectName}}Views {
                 }, String(node.id))
             );
             {{/if}}
+            {{/if}}
             
             // Add child elements
             children.push(...context.renderChildren(node));
             
             return h('g', {
                 attrs: { transform: `translate(${x}, ${y})` },
-                class: { node: true, '{{toLowerCase name}}': true }
+                class: { 
+                    node: true, 
+                    '{{toLowerCase name}}': true,
+                    {{#if metadata.deletable}}deletable: {{metadata.deletable}},{{/if}}
+                    {{#if metadata.resizable}}resizable: {{metadata.resizable}},{{/if}}
+                    {{#if metadata.connectable}}connectable: {{metadata.connectable}}{{/if}}
+                }
             }, children);
         }
     }
@@ -176,13 +344,16 @@ export namespace {{toPascalCase projectName}}Views {
     export class EdgeView extends PolylineEdgeView {
         protected renderLine(edge: SEdge, segments: Point[], context: RenderingContext): VNode | undefined {
             const path = this.createPath(segments);
+            const edgeStroke = '{{#if grammar.metadata.config.styling.colors.edge.stroke}}{{grammar.metadata.config.styling.colors.edge.stroke}}{{else}}#64748b{{/if}}';
+            const edgeStrokeWidth = {{#if grammar.metadata.config.styling.colors.edge.strokeWidth}}{{grammar.metadata.config.styling.colors.edge.strokeWidth}}{{else}}2{{/if}};
+            
             const children: VNode[] = [
                 h('path', {
                     attrs: {
                         d: path,
                         fill: 'none',
-                        stroke: '#333',
-                        'stroke-width': 2,
+                        stroke: edgeStroke,
+                        'stroke-width': edgeStrokeWidth,
                         'marker-end': 'url(#arrow)'
                     }
                 })

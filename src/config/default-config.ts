@@ -15,7 +15,11 @@ export const DEFAULT_CONFIG: GLSPConfig = {
         '@eclipse-glsp/client': '^2.0.0',
         '@eclipse-glsp/theia-integration': '^2.0.0',
         '@theia/core': '^1.35.0',
-        customDeps: {}
+        customDeps: {
+            '@theia/filesystem': '^1.35.0',
+            '@theia/messages': '^1.35.0',
+            '@theia/monaco': '^1.35.0'
+        }
     },
     diagram: {
         type: 'node-edge',
