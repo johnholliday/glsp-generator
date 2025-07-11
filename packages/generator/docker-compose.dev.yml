@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  glspgen:
+    image: ghcr.io/johnholliday/glsp-generator:dev
+    build:
+      context: ../..
+      dockerfile: packages/generator/Dockerfile
+    container_name: glspgen-dev
+    ports:
+      - "51620:51620"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=51620
+      - LOG_LEVEL=debug
+    volumes:
+      # Mount workspace for input/output
+      - ./workspace:/workspace
+      # Mount dist for hot reload during development
+      - ./dist:/app/dist:ro
+      # Mount templates for template development
+      - ./src/templates:/app/dist/templates:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:51620/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    command: ["dist/api-server.js"]
+
+  # Optional: Local development with source watching
+  glsp-watch:
+    image: ghcr.io/johnholliday/glsp-generator:dev
+    build:
+      context: ../..
+      dockerfile: packages/generator/Dockerfile
+      target: builder
+    container_name: glsp-watch
+    working_dir: /app/packages/generator
+    volumes:
+      - ./src:/app/packages/generator/src
+      - ./dist:/app/packages/generator/dist
+      - ./package.json:/app/packages/generator/package.json
+      - ./tsconfig.json:/app/packages/generator/tsconfig.json
+    command: ["yarn", "dev"]
+    profiles:
+      - watch
+
+volumes:
+  workspace:
+    driver: local
+
+networks:
+  default:
+    name: glsp-dev-network

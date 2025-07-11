@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "name": "statemachine-workspace",
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "extensions/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^8.1.2"
+  },
+  "scripts": {
+    "build": "lerna run build",
+    "build:all": "yarn build:vscode && yarn build:extensions && yarn build:apps && yarn deploy:vscode",
+    "build:vscode": "lerna run build --scope=\"*-vscode\"",
+    "build:extensions": "lerna run build --scope=\"@statemachine/*\"",
+    "build:apps": "lerna run build --scope=\"browser-app\" --scope=\"electron-app\"",
+    "watch": "lerna run watch --parallel",
+    "start:browser": "yarn workspace browser-app start",
+    "start:electron": "yarn workspace electron-app start",
+    "package:vscode": "lerna run package --scope=\"*-vscode\"",
+    "deploy:vscode": "lerna run deploy --scope=\"*-vscode\""
+  }
+}

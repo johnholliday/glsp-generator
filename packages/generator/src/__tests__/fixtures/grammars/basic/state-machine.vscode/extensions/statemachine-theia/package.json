@@ -1,0 +1,32 @@
+{
+  "name": "@statemachine/theia-extension",
+  "version": "0.1.0",
+  "description": "Theia integration for StateMachine language",
+  "license": "MIT",
+  "main": "lib/browser/index.js",
+  "types": "lib/browser/index.d.ts",
+  "keywords": [
+    "theia-extension"
+  ],
+  "theiaExtensions": [
+    {
+      "frontend": "lib/browser/theia-frontend-module"
+    }
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf lib"
+  },
+  "dependencies": {
+    "@theia/core": "^1.50.0",
+    "@theia/editor": "^1.50.0",
+    "@theia/monaco": "^1.50.0",
+    "@theia/plugin-ext": "^1.50.0",
+    "@statemachine/shared-model": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "rimraf": "^5.0.7"
+  }
+}

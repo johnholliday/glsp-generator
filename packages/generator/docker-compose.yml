@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  glsp-generator-api:
+    build:
+      context: ../..
+      dockerfile: packages/generator/Dockerfile
+    image: ghcr.io/johnholliday/glsp-generator:latest
+    container_name: glspgen
+    ports:
+      - "51620:51620"
+    environment:
+      - NODE_ENV=production
+      - API_PORT=51620
+      - LOG_LEVEL=info
+    volumes:
+      # Mount workspace for input/output files
+      - ./workspace:/workspace
+      # Mount templates for hot-reload during development
+      - ./templates:/app/templates:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:51620/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    command: ["dist/api-server.js"]
+    
+  # CLI service for one-off commands
+  glsp-generator-cli:
+    build:
+      context: ../..
+      dockerfile: packages/generator/Dockerfile
+    image: ghcr.io/johnholliday/glsp-generator:latest
+    container_name: glsp-generator-cli
+    volumes:
+      - ./workspace:/workspace
+    environment:
+      - LOG_LEVEL=info
+    # Default to help command, can be overridden
+    command: ["dist/cli.js", "--help"]
+    profiles:
+      - cli
+
+  # Development service with auto-reload
+  glsp-generator-dev:
+    build:
+      context: ../..
+      dockerfile: packages/generator/Dockerfile
+      target: builder  # Use builder stage for development
+    image: ghcr.io/johnholliday/glsp-generator:dev
+    container_name: glsp-generator-dev
+    ports:
+      - "51621:51620"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=51620
+      - LOG_LEVEL=debug
+    volumes:
+      # Mount source for hot-reload
+      - ./src:/app/src
+      - ./templates:/app/templates
+      - ./workspace:/workspace
+    command: ["yarn", "dev:api"]
+    profiles:
+      - development
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: glsp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - glspgen
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  workspace:
+    driver: local
+
+networks:
+  default:
+    name: glsp-network

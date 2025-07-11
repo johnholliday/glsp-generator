@@ -1,0 +1,12 @@
+{
+  "version": "independent",
+  "npmClient": "yarn",
+  "command": {
+    "version": {
+      "exact": true
+    },
+    "publish": {
+      "registry": "https://registry.npmjs.org"
+    }
+  }
+}

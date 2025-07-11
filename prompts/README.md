@@ -27,6 +27,19 @@ This directory contains structured enhancement requests for the GLSP Generator p
 | 011 | [prompt-011-migration-tools.md](prompt-011-migration-tools.md) | Grammar migration tools | 🔴 Removed | None | LOW |
 | 012 | [prompt-012-type-safety.md](prompt-012-type-safety.md) | Enhanced type safety features | 🟢 Completed | None | MEDIUM |
 | 013 | [prompt-013-dev-cli.md](prompt-013-dev-cli.md) | Development CLI with Yargs and Yarn Link | 🟢 Completed | None | HIGH |
+| 014 | [prompt-014-grammar-attributes.md](prompt-014-grammar-attributes.md) | Grammar Attributes Support | 🔴 Not Started | 002 | MEDIUM |
+| 015 | [prompt-015-first-time-setup.md](prompt-015-first-time-setup.md) | First-Time Setup Automation | 🔴 Not Started | None | HIGH |
+| 016 | [prompt-016-env-configuration.md](prompt-016-env-configuration.md) | Developer Environment Configuration | 🔴 Not Started | None | HIGH |
+| 017 | [prompt-017-developer-commands.md](prompt-017-developer-commands.md) | Improved Developer Commands | 🔴 Not Started | 015, 016 | HIGH |
+| 018 | [prompt-018-error-handling.md](prompt-018-error-handling.md) | Better Error Messages & Recovery | 🔴 Not Started | None | MEDIUM |
+| 019 | [prompt-019-vscode-workspace.md](prompt-019-vscode-workspace.md) | VS Code Workspace Enhancements | 🔴 Not Started | None | MEDIUM |
+| 020 | [prompt-020-interactive-cli.md](prompt-020-interactive-cli.md) | Interactive CLI Experience | 🔴 Not Started | 018 | MEDIUM |
+| 021 | [prompt-021-contributing-docs.md](prompt-021-contributing-docs.md) | Developer Documentation (CONTRIBUTING.md) | 🔴 Not Started | None | MEDIUM |
+| 022 | [prompt-022-testing-tools.md](prompt-022-testing-tools.md) | Testing & Debugging Tools | 🔴 Not Started | 002 | LOW |
+| 023 | [prompt-023-release-automation.md](prompt-023-release-automation.md) | Build & Release Automation | 🔴 Not Started | 022 | LOW |
+| 024 | [prompt-024-developer-dashboard.md](prompt-024-developer-dashboard.md) | Developer Dashboard | 🔴 Not Started | None | LOW |
+| 025 | [prompt-025-grammar-dev-tools.md](prompt-025-grammar-dev-tools.md) | Grammar Development Tools | 🔴 Not Started | 019 | LOW |
+| 026 | [prompt-026-docker-dev-experience.md](prompt-026-docker-dev-experience.md) | Docker Development Experience | 🔴 Not Started | 016 | LOW |
 
 ## Status Legend
 
@@ -35,6 +48,7 @@ This directory contains structured enhancement requests for the GLSP Generator p
 - 🟢 Completed
 - 🔵 On Hold
 - ⚫ Cancelled
+- 🔴 Removed (No longer applicable)
 
 ## Implementation Order Recommendation
 
@@ -51,13 +65,28 @@ Based on dependencies and priority:
    - 005: Validation Diagnostics
    - 006: Documentation Generator
    - 012: Type Safety
+   - 014: Grammar Attributes
 
 3. **Phase 3 - Advanced**
    - 007: Test Infrastructure
    - 008: CI/CD Templates
    - 009: Custom Templates
    - 010: Performance
-   - 011: Migration Tools
+   - 011: Migration Tools (Removed)
+
+4. **Phase 4 - Developer Experience** (New)
+   - 015: First-Time Setup Automation
+   - 016: Developer Environment Configuration
+   - 017: Improved Developer Commands
+   - 018: Better Error Messages & Recovery
+   - 019: VS Code Workspace Enhancements
+   - 020: Interactive CLI Experience
+   - 021: Developer Documentation
+   - 022: Testing & Debugging Tools
+   - 023: Build & Release Automation
+   - 024: Developer Dashboard
+   - 025: Grammar Development Tools
+   - 026: Docker Development Experience
 
 ## Notes
 

@@ -1,0 +1,1 @@
+{"version":3,"file":"statemachine-command-contribution.d.ts","sourceRoot":"","sources":["../../src/browser/statemachine-command-contribution.ts"],"names":[],"mappings":"AAAA,OAAO,EAAW,mBAAmB,EAAE,eAAe,EAAE,MAAM,aAAa,CAAC;AAI5E,qBACa,+BAAgC,YAAW,mBAAmB;IAEvE,gBAAgB,CAAC,QAAQ,EAAE,eAAe,GAAG,IAAI;CAcpD"}

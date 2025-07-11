@@ -1,48 +1,15 @@
-# Dependencies
 node_modules/
-
-# Build output
 dist/
-lib/
-*.tsbuildinfo
-
-# Test output
-test-grammar-glsp-extension/
-src/__tests__/temp-output/
-coverage/
-sandbox/
-.vitest-ui.pid
-
-# Cache
-.glsp-cache/
-
-# IDE
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-*.Zone.Identifier
-*:Zone.Identifier
-
-# Logs
+out/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Package manager
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Unused/temporary code
-.unused/
+*.vsix
+.vscode-test/
+coverage/
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+packages/glspgen-latest.vsix

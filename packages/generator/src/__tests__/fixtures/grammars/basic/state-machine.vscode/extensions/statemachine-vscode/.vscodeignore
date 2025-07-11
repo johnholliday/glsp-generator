@@ -1,0 +1,37 @@
+# Source files
+src/**
+*.ts
+tsconfig.json
+
+# Build files
+node_modules/**
+.vscode/**
+.git/**
+
+# Development files
+esbuild.config.js
+*.log
+*.tmp
+*.temp
+
+# Documentation
+README.md
+
+# Deployment files
+vsix.deploy.mjs
+
+# Parent directory exclusions (CRITICAL FIX)
+../**
+../../**
+
+# Monorepo specific exclusions
+**/node_modules/**
+**/lib/**
+**/build/**
+**/dist/**
+
+# Only include the built output
+!out/**
+!package.json
+!language-configuration.json
+!syntaxes/**

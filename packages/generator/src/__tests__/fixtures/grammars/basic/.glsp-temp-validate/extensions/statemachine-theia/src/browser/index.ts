@@ -1,0 +1,1 @@
+export { default } from './theia-frontend-module.js';

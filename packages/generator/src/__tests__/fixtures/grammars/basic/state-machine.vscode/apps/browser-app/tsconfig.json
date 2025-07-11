@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./lib",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../../packages/shared-model"
+    },
+    {
+      "path": "../../extensions/statemachine-theia"
+    },
+    {
+      "path": "../../extensions/statemachine-glsp"
+    },
+    {
+      "path": "../../extensions/statemachine-widgets"
+    }
+  ]
+}

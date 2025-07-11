@@ -57,7 +57,17 @@
       "Bash(npx vsce:*)",
       "Bash(npm ls:*)",
       "Bash(./scripts/run-extension.sh:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(yarn:*)",
+      "Bash(echo $SHELL)",
+      "Bash(glspgen:*)",
+      "Bash(touch:*)",
+      "Bash(docker run:*)",
+      "Bash(unzip:*)",
+      "Bash(docker logs:*)",
+      "WebFetch(domain:www.eliostruyf.com)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)"
     ],
     "deny": []
   }

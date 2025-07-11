@@ -1,0 +1,38 @@
+{
+  "name": "glsp-dependencies-builder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Template for pre-building GLSP extension dependencies",
+  "dependencies": {
+    "@eclipse-glsp/client": "^2.0.0",
+    "@eclipse-glsp/protocol": "^2.0.0",
+    "@eclipse-glsp/server": "^2.0.0",
+    "@eclipse-glsp/theia-integration": "^2.0.0",
+    "@theia/core": "^1.40.0",
+    "@theia/editor": "^1.40.0",
+    "@theia/filesystem": "^1.40.0",
+    "@theia/messages": "^1.40.0",
+    "@theia/monaco": "^1.40.0",
+    "@theia/navigator": "^1.40.0",
+    "@theia/workspace": "^1.40.0",
+    "inversify": "^6.0.1",
+    "reflect-metadata": "^0.2.0",
+    "sprotty": "^1.0.0",
+    "sprotty-protocol": "^1.0.0",
+    "uuid": "^9.0.0",
+    "vscode-jsonrpc": "^8.0.0",
+    "vscode-ws-jsonrpc": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.4",
+    "rimraf": "^5.0.1",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.4.4",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3",
+    "concurrently": "^7.6.0"
+  }
+}

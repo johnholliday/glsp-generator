@@ -1,0 +1,121 @@
+{
+  "name": "glspgen",
+  "displayName": "GLSP Generator",
+  "description": "Generates Theia/VSCode GLSP extensions from Langium grammars.",
+  "version": "2.1.243",
+  "icon": "logo.png",
+  "publisher": "docuGenix",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:glsp.generateProject",
+    "onCommand:glsp.validateGrammar",
+    "onCommand:glsp.generateTheiaApp",
+    "workspaceContains:**/*.langium"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "submenus": [
+      {
+        "id": "glsp.submenu",
+        "label": "GLSPGen"
+      }
+    ],
+    "commands": [
+      {
+        "command": "glsp.generateProject",
+        "title": "Generate VSCode Extension",
+        "category": "GLSP",
+        "enablement": "resourceExtname == .langium"
+      },
+      {
+        "command": "glsp.validateGrammar",
+        "title": "Validate Grammar",
+        "category": "GLSP",
+        "enablement": "resourceExtname == .langium"
+      },
+      {
+        "command": "glsp.generateTheiaApp",
+        "title": "Generate Theia Application",
+        "category": "GLSP",
+        "enablement": "resourceExtname == .langium"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .langium",
+          "submenu": "glsp.submenu",
+          "group": "navigation"
+        }
+      ],
+      "glsp.submenu": [
+        {
+          "command": "glsp.generateProject",
+          "group": "1_generate@1"
+        },
+        {
+          "command": "glsp.generateTheiaApp",
+          "group": "1_generate@2"
+        },
+        {
+          "command": "glsp.validateGrammar",
+          "group": "2_validate@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "GLSP Generator",
+      "properties": {
+        "glsp.generator.outputDirectory": {
+          "type": "string",
+          "default": ".",
+          "description": "Output directory path. Can be absolute, or relative to workspace root if unrooted. Use '.' for same directory as grammar file."
+        },
+        "glsp.generator.outputRelativeToGrammar": {
+          "type": "boolean",
+          "default": true,
+          "description": "When enabled, the output directory path is relative to the grammar file's directory. When disabled, treats as absolute path or relative to workspace root."
+        },
+        "glsp.generator.autoOpenOutput": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open output folder after generation"
+        },
+        "glsp.generator.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show progress notifications during generation"
+        },
+        "glsp.generator.useApi": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use GLSP Generator API instead of CLI (requires API server running)"
+        },
+        "glsp.generator.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:51620",
+          "description": "URL of the GLSP Generator API server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "yarn dlx @vscode/vsce package --allow-missing-repository",
+    "package:versioned": "yarn dlx @vscode/vsce package --allow-missing-repository --out glspgen-${npm_package_version}.vsix",
+    "build": "yarn compile && yarn package:versioned",
+    "publish": "yarn dlx @vscode/vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}

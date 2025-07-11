@@ -1,0 +1,27 @@
+{
+  "totalDuration": 262,
+  "phases": [
+    [
+      "cache-load",
+      {
+        "duration": 58.411242,
+        "memoryDelta": 824608,
+        "peakMemory": 33683872,
+        "startTime": 835865673589320,
+        "endTime": 835865732000562
+      }
+    ],
+    [
+      "cache-grammar-set",
+      {
+        "duration": 0.304315,
+        "memoryDelta": 12144,
+        "peakMemory": 41315048,
+        "startTime": 835865774277328,
+        "endTime": 835865774581643
+      }
+    ]
+  ],
+  "memoryPeak": 45525832,
+  "recommendations": []
+}

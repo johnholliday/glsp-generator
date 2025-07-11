@@ -1,0 +1,31 @@
+{
+  "name": "@statemachine/widgets-extension",
+  "version": "0.1.0",
+  "description": "Multi-view editor widgets for StateMachine",
+  "license": "MIT",
+  "main": "lib/browser/index.js",
+  "types": "lib/browser/index.d.ts",
+  "keywords": [
+    "theia-extension"
+  ],
+  "theiaExtensions": [
+    {
+      "frontend": "lib/browser/dual-view-frontend-module"
+    }
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf lib"
+  },
+  "dependencies": {
+    "@theia/core": "^1.50.0",
+    "@theia/editor": "^1.50.0",
+    "@theia/monaco": "^1.50.0",
+    "@statemachine/glsp-extension": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "rimraf": "^5.0.7"
+  }
+}

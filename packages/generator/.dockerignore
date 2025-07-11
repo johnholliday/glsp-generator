@@ -1,0 +1,101 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Development files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node modules (rebuilt in Docker)
+node_modules
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+.pnp.*
+
+# Build artifacts (rebuilt in Docker)
+dist
+*.tsbuildinfo
+
+# Test files
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+__tests__
+__mocks__
+vitest.config.ts
+jest.config.js
+
+# Documentation
+docs
+*.md
+!README.md
+!DOCKER.md
+
+# Development/debug files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.*.local
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Examples and sandbox
+examples
+sandbox
+scripts/test-*.js
+scripts/*-test.js
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+.cache
+
+# IDE specific
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Docker files (don't include compose files in image)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Yarn Berry specific
+.yarnrc.yml.bak
+.yarn/sdks
+.yarn/versions
+
+# Local workspace
+workspace
+output
+generated
+
+# Development scripts that aren't needed in production
+scripts/dev-*.js
+scripts/debug-*.js
+scripts/benchmark-*.js
+scripts/profile-*.js

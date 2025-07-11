@@ -1,0 +1,1 @@
+{"version":3,"file":"statemachine-server-model.d.ts","sourceRoot":"","sources":["../../../src/server/model/statemachine-server-model.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,MAAM,oCAAoC,CAAC;AAEvE,qBAAa,uBAAuB;IAChC,MAAM,CAAC,UAAU,IAAI,iBAAiB,CAAC,mBAAmB;IAS1D,MAAM,CAAC,oBAAoB,CAAC,aAAa,EAAE,MAAM,GAAG,iBAAiB,CAAC,mBAAmB;CAsC5F"}

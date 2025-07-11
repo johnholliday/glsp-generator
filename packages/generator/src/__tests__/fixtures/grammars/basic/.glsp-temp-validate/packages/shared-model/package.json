@@ -1,0 +1,22 @@
+{
+  "name": "@statemachine/shared-model",
+  "version": "0.1.0",
+  "description": "Shared model definitions for StateMachine",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf lib"
+  },
+  "dependencies": {
+    "@eclipse-glsp/protocol": "^2.2.0",
+    "json-schema": "^0.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "rimraf": "^5.0.7",
+    "@types/json-schema": "^7.0.15"
+  }
+}

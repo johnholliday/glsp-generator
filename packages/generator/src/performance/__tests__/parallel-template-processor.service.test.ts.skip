@@ -1,0 +1,388 @@
+import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
+import { Container } from 'inversify';
+import { TYPES } from '../../config/di/types.js';
+import { ParallelTemplateProcessorService } from '../parallel-template-processor.service.js';
+import { ITemplateLoader } from '../interfaces/template-loader.interface.js';
+import { ITemplateValidator, ValidationResult } from '../interfaces/template-validator.interface.js';
+import { IOutputHandler } from '../interfaces/output-handler.interface.js';
+import { IWorkerPool } from '../interfaces/worker-pool.interface.js';
+import { IPerformanceMonitor } from '../interfaces/performance-monitor.interface.js';
+import { IMemoryManager } from '../interfaces/memory-manager.interface.js';
+import { ILogger } from '../../utils/logger/index.js';
+import { Template, GeneratorContext, ProcessingResult } from '../parallel-processor.js';
+import { PerformanceConfig, WorkerResult } from '../types.js';
+import { Worker } from 'worker_threads';
+
+describe('ParallelTemplateProcessorService', () => {
+    let container: Container;
+    let processor: ParallelTemplateProcessorService;
+    let mockLogger: ILogger;
+    let mockTemplateLoader: ITemplateLoader;
+    let mockTemplateValidator: ITemplateValidator;
+    let mockOutputHandler: IOutputHandler;
+    let mockWorkerPool: IWorkerPool<Worker>;
+    let mockPerformanceMonitor: IPerformanceMonitor;
+    let mockMemoryManager: IMemoryManager;
+    let mockConfig: PerformanceConfig;
+
+    beforeEach(() => {
+        container = new Container();
+
+        // Create mocks with proper typing
+        mockLogger = {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn()
+        } as any;
+
+        mockTemplateLoader = {
+            loadTemplate: vi.fn(),
+            loadTemplates: vi.fn(),
+            templateExists: vi.fn(),
+            getTemplateMetadata: vi.fn()
+        };
+
+        mockTemplateValidator = {
+            validateTemplate: vi.fn(),
+            validateTemplates: vi.fn(),
+            validateDependencies: vi.fn(),
+            getValidationRules: vi.fn()
+        };
+
+        mockOutputHandler = {
+            handleResult: vi.fn(),
+            handleResults: vi.fn(),
+            validateOutput: vi.fn(),
+            getOutputStats: vi.fn(),
+            cleanup: vi.fn()
+        };
+
+        mockWorkerPool = {
+            executeTask: vi.fn(),
+            executeTasks: vi.fn(),
+            acquire: vi.fn(),
+            release: vi.fn(),
+            size: vi.fn(() => 4),
+            available: vi.fn(() => 4),
+            destroy: vi.fn(),
+            getStats: vi.fn(() => ({
+                totalWorkers: 4,
+                activeWorkers: 0,
+                queuedTasks: 0,
+                completedTasks: 0,
+                failedTasks: 0
+            })),
+            healthCheck: vi.fn(),
+            restartWorkers: vi.fn()
+        };
+
+        mockPerformanceMonitor = {
+            getMemoryUsage: vi.fn(),
+            isMemoryPressure: vi.fn(),
+            forceGC: vi.fn(),
+            startOperation: vi.fn(() => () => { }),
+            recordMetric: vi.fn(),
+            printSummary: vi.fn(),
+            reset: vi.fn()
+        };
+
+        mockMemoryManager = {
+            startMonitoring: vi.fn(),
+            stopMonitoring: vi.fn(),
+            getMemoryUsage: vi.fn(() => ({
+                heapUsed: 100000,
+                heapTotal: 200000,
+                external: 50000,
+                rss: 300000,
+                arrayBuffers: 10000
+            })),
+            isMemoryPressure: vi.fn(() => false),
+            forceGC: vi.fn(),
+            emergencyCleanup: vi.fn(),
+            getStats: vi.fn(),
+            setThresholds: vi.fn(),
+            getRecommendations: vi.fn(),
+            getMemoryPressureLevel: vi.fn(() => 'low'),
+            createSnapshot: vi.fn(),
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn()
+        } as any;
+
+        mockConfig = {
+            enableParallelProcessing: true,
+            enableStreaming: true,
+            enableProgressIndicators: true,
+            enableMemoryMonitoring: true,
+            maxMemoryUsage: 512 * 1024 * 1024,
+            gcHints: true,
+            profileMode: false
+        };
+
+        // Bind mocks to container
+        container.bind<ILogger>(TYPES.Logger).toConstantValue(mockLogger);
+        container.bind<ITemplateLoader>(TYPES.ITemplateLoader).toConstantValue(mockTemplateLoader);
+        container.bind<ITemplateValidator>(TYPES.ITemplateValidator).toConstantValue(mockTemplateValidator);
+        container.bind<IOutputHandler>(TYPES.IOutputHandler).toConstantValue(mockOutputHandler);
+        container.bind<IWorkerPool<Worker>>(TYPES.IWorkerPool).toConstantValue(mockWorkerPool);
+        container.bind<IPerformanceMonitor>(TYPES.IPerformanceMonitor).toConstantValue(mockPerformanceMonitor);
+        container.bind<IMemoryManager>(TYPES.IMemoryManager).toConstantValue(mockMemoryManager);
+        container.bind<PerformanceConfig>(TYPES.PerformanceConfig).toConstantValue(mockConfig);
+
+        container.bind<ParallelTemplateProcessorService>(ParallelTemplateProcessorService)
+            .toSelf()
+            .inSingletonScope();
+
+        processor = container.get<ParallelTemplateProcessorService>(ParallelTemplateProcessorService);
+    });
+
+    afterEach(() => {
+        vi.clearAllMocks();
+    });
+
+    describe('processTemplates', () => {
+        it('should process templates successfully', async () => {
+            // Arrange
+            const templates: Template[] = [
+                {
+                    name: 'template1',
+                    path: '/path/to/template1',
+                    content: 'content1',
+                    dependencies: [],
+                    priority: 1
+                },
+                {
+                    name: 'template2',
+                    path: '/path/to/template2',
+                    content: 'content2',
+                    dependencies: ['template1'],
+                    priority: 2
+                }
+            ];
+
+            const context: GeneratorContext = {
+                projectName: 'test-project',
+                grammar: {},
+                config: {},
+                outputDir: '/output'
+            };
+
+            const expectedResults: ProcessingResult[] = [
+                {
+                    templateName: 'template1',
+                    outputPath: '/output/template1.js',
+                    content: 'processed content1',
+                    size: 100,
+                    duration: 50
+                },
+                {
+                    templateName: 'template2',
+                    outputPath: '/output/template2.js',
+                    content: 'processed content2',
+                    size: 150,
+                    duration: 75
+                }
+            ];
+
+            // Setup mocks
+            (mockTemplateValidator.validateTemplates as MockedFunction<any>).mockResolvedValue(new Map([
+                ['template1', { isValid: true, errors: [], warnings: [] }],
+                ['template2', { isValid: true, errors: [], warnings: [] }]
+            ]));
+
+            (mockTemplateValidator.validateDependencies as MockedFunction<any>).mockResolvedValue({
+                circularDependencies: [],
+                missingDependencies: [],
+                validationErrors: []
+            });
+
+            (mockWorkerPool.executeTasks as MockedFunction<any>)
+                .mockResolvedValueOnce([
+                    { id: 'template-template1', result: expectedResults[0], duration: 50, memoryUsage: {} as any }
+                ])
+                .mockResolvedValueOnce([
+                    { id: 'template-template2', result: expectedResults[1], duration: 75, memoryUsage: {} as any }
+                ]);
+
+            (mockOutputHandler.handleResults as MockedFunction<any>).mockResolvedValue(undefined);
+
+            // Act
+            const results = await processor.processTemplates(templates, context);
+
+            // Assert
+            expect(results).toEqual(expectedResults);
+            expect(mockMemoryManager.startMonitoring).toHaveBeenCalled();
+            expect(mockMemoryManager.stopMonitoring).toHaveBeenCalled();
+            expect(mockTemplateValidator.validateTemplates).toHaveBeenCalledWith(templates);
+            expect(mockWorkerPool.executeTasks).toHaveBeenCalled();
+            expect(mockOutputHandler.handleResults).toHaveBeenCalledWith(expectedResults);
+        });
+
+        it('should handle validation errors', async () => {
+            // Arrange
+            const templates: Template[] = [
+                {
+                    name: 'invalid-template',
+                    path: '/path/to/invalid',
+                    content: '',
+                    dependencies: [],
+                    priority: 1
+                }
+            ];
+
+            const context: GeneratorContext = {
+                projectName: 'test-project',
+                grammar: {},
+                config: {},
+                outputDir: '/output'
+            };
+
+            (mockTemplateValidator.validateTemplates as MockedFunction<any>).mockResolvedValue(new Map([
+                ['invalid-template', { isValid: false, errors: ['Template content is empty'], warnings: [] }]
+            ]));
+
+            // Act & Assert
+            await expect(processor.processTemplates(templates, context))
+                .rejects.toThrow('Template validation failed');
+
+            expect(mockMemoryManager.startMonitoring).toHaveBeenCalled();
+            expect(mockMemoryManager.stopMonitoring).toHaveBeenCalled();
+        });
+
+        it('should handle circular dependencies', async () => {
+            // Arrange
+            const templates: Template[] = [
+                {
+                    name: 'template1',
+                    path: '/path/to/template1',
+                    content: 'content1',
+                    dependencies: ['template2'],
+                    priority: 1
+                },
+                {
+                    name: 'template2',
+                    path: '/path/to/template2',
+                    content: 'content2',
+                    dependencies: ['template1'],
+                    priority: 2
+                }
+            ];
+
+            const context: GeneratorContext = {
+                projectName: 'test-project',
+                grammar: {},
+                config: {},
+                outputDir: '/output'
+            };
+
+            (mockTemplateValidator.validateTemplates as MockedFunction<any>).mockResolvedValue(new Map([
+                ['template1', { isValid: true, errors: [], warnings: [] }],
+                ['template2', { isValid: true, errors: [], warnings: [] }]
+            ]));
+
+            (mockTemplateValidator.validateDependencies as MockedFunction<any>).mockResolvedValue({
+                circularDependencies: [['template1', 'template2', 'template1']],
+                missingDependencies: [],
+                validationErrors: []
+            });
+
+            // Act & Assert
+            await expect(processor.processTemplates(templates, context))
+                .rejects.toThrow('Circular dependencies detected');
+        });
+    });
+
+    describe('getStats', () => {
+        it('should return processing statistics', () => {
+            // Act
+            const stats = processor.getStats();
+
+            // Assert
+            expect(stats).toEqual({
+                maxWorkers: expect.any(Number),
+                poolSize: 4,
+                availableWorkers: 4,
+                memoryUsage: {
+                    heapUsed: 100000,
+                    heapTotal: 200000,
+                    external: 50000,
+                    rss: 300000,
+                    arrayBuffers: 10000
+                }
+            });
+        });
+    });
+
+    describe('cleanup', () => {
+        it('should cleanup all resources', async () => {
+            // Setup mocks
+            (mockWorkerPool.destroy as MockedFunction<any>).mockResolvedValue(undefined);
+            (mockOutputHandler.cleanup as MockedFunction<any>).mockResolvedValue(undefined);
+
+            // Act
+            await processor.cleanup();
+
+            // Assert
+            expect(mockWorkerPool.destroy).toHaveBeenCalled();
+            expect(mockOutputHandler.cleanup).toHaveBeenCalled();
+            expect(mockMemoryManager.stopMonitoring).toHaveBeenCalled();
+        });
+
+        it('should handle cleanup errors gracefully', async () => {
+            // Arrange
+            (mockWorkerPool.destroy as MockedFunction<any>).mockRejectedValue(new Error('Cleanup failed'));
+
+            // Act & Assert
+            await expect(processor.cleanup()).rejects.toThrow('Cleanup failed');
+        });
+    });
+
+    describe('healthCheck', () => {
+        it('should return true when all components are healthy', async () => {
+            // Arrange
+            (mockWorkerPool.healthCheck as MockedFunction<any>).mockResolvedValue(true);
+
+            // Act
+            const isHealthy = await processor.healthCheck();
+
+            // Assert
+            expect(isHealthy).toBe(true);
+            expect(mockWorkerPool.healthCheck).toHaveBeenCalled();
+        });
+
+        it('should return false when worker pool is unhealthy', async () => {
+            // Arrange
+            (mockWorkerPool.healthCheck as MockedFunction<any>).mockResolvedValue(false);
+
+            // Act
+            const isHealthy = await processor.healthCheck();
+
+            // Assert
+            expect(isHealthy).toBe(false);
+        });
+
+        it('should return false when memory is critical', async () => {
+            // Arrange
+            (mockWorkerPool.healthCheck as MockedFunction<any>).mockResolvedValue(true);
+            (mockMemoryManager.getMemoryPressureLevel as MockedFunction<any>).mockReturnValue('critical');
+
+            // Act
+            const isHealthy = await processor.healthCheck();
+
+            // Assert
+            expect(isHealthy).toBe(false);
+        });
+
+        it('should handle health check errors', async () => {
+            // Arrange
+            (mockWorkerPool.healthCheck as MockedFunction<any>).mockRejectedValue(new Error('Health check failed'));
+
+            // Act
+            const isHealthy = await processor.healthCheck();
+
+            // Assert
+            expect(isHealthy).toBe(false);
+        });
+    });
+});

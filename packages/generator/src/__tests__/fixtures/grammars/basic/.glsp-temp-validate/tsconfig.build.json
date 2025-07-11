@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true
+  },
+  "include": [],
+  "references": [
+    {
+      "path": "./packages/shared-model"
+    },
+    {
+      "path": "./extensions/statemachine-vscode"
+    },
+    {
+      "path": "./extensions/statemachine-theia"
+    },
+    {
+      "path": "./extensions/statemachine-glsp"
+    },
+    {
+      "path": "./extensions/statemachine-widgets"
+    },
+    {
+      "path": "./apps/browser-app"
+    },
+    {
+      "path": "./apps/electron-app"
+    }
+  ]
+}

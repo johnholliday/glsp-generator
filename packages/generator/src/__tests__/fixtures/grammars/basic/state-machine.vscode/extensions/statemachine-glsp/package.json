@@ -1,0 +1,32 @@
+{
+  "name": "@statemachine/glsp-extension",
+  "version": "0.1.0",
+  "description": "GLSP diagram extension for StateMachine",
+  "license": "MIT",
+  "main": "lib/browser/index.js",
+  "types": "lib/browser/index.d.ts",
+  "keywords": [
+    "theia-extension"
+  ],
+  "theiaExtensions": [
+    {
+      "frontend": "lib/browser/glsp-frontend-module"
+    }
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rimraf lib"
+  },
+  "dependencies": {
+    "@eclipse-glsp/client": "^2.2.0",
+    "@eclipse-glsp/theia-integration": "^2.2.0",
+    "@theia/core": "^1.50.0",
+    "@theia/editor": "^1.50.0",
+    "@statemachine/shared-model": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "rimraf": "^5.0.7"
+  }
+}

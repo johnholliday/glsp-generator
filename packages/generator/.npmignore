@@ -1,0 +1,59 @@
+# Development files
+.vscode/
+.glsp-cache/
+.git/
+.gitignore
+.dockerignore
+
+# Test files
+src/__tests__/
+src/**/*.test.ts
+src/**/*.spec.ts
+vitest.config.ts
+coverage/
+.nyc_output/
+
+# Source files (we only need dist)
+src/
+tsconfig.json
+tsconfig.*.json
+
+# Build artifacts
+*.tsbuildinfo
+.turbo/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts (except the ones needed for npm)
+scripts/
+!scripts/postinstall.js
+
+# Sandbox and examples
+sandbox/
+examples/
+test-output/
+
+# Docker files (not needed in npm package)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# IDE files
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Local config
+.env
+.env.*
+*.local

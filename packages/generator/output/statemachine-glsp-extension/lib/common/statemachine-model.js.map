@@ -1,0 +1,1 @@
+{"version":3,"file":"statemachine-model.js","sourceRoot":"","sources":["../../src/common/statemachine-model.ts"],"names":[],"mappings":"AAAA,MAAM,KAAW,iBAAiB,CAmCjC;AAnCD,WAAiB,iBAAiB;IACjB,+BAAa,GAAG;QACzB,YAAY,EAAE,2BAA2B;QACzC,KAAK,EAAE,aAAa;QACpB,UAAU,EAAE,uBAAuB;KACtC,CAAC;AA8BN,CAAC,EAnCgB,iBAAiB,KAAjB,iBAAiB,QAmCjC"}
